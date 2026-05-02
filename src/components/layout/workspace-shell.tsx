@@ -2,6 +2,7 @@
 
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useSyncExternalStore } from "react";
+import { UserRole } from "@prisma/client";
 
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -39,7 +40,7 @@ export function WorkspaceShell({
 }: {
   children: React.ReactNode;
   userName: string;
-  userRole: string;
+  userRole: UserRole | string;
   title?: string | null;
 }) {
   const collapsed = useSyncExternalStore(subscribe, getSidebarSnapshot, () => false);
@@ -52,7 +53,7 @@ export function WorkspaceShell({
   return (
     <div className="min-h-screen p-4 lg:p-6">
       <div className={`mx-auto grid max-w-[1680px] gap-4 transition-all duration-300 ${collapsed ? "lg:grid-cols-[88px_1fr]" : "lg:grid-cols-[288px_1fr]"}`}>
-        <Sidebar collapsed={collapsed} />
+        <Sidebar collapsed={collapsed} userRole={userRole} />
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" onClick={() => updateCollapsed(!collapsed)} className="h-11 w-11 rounded-2xl p-0 shadow-sm">

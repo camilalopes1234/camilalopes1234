@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { UserRole } from "@prisma/client";
 
 const items = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
@@ -15,11 +16,13 @@ const items = [
   { href: "/evaluations", label: "Avaliacoes", icon: ClipboardCheck },
   { href: "/conversations", label: "Chatbot", icon: MessageSquareMore },
   { href: "/opportunities", label: "Propostas", icon: BriefcaseBusiness },
+  { href: "/users", label: "Usuarios", icon: Users, adminOnly: true },
   { href: "/settings", label: "Configuracoes", icon: Settings }
 ];
 
-export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
+export function Sidebar({ collapsed = false, userRole }: { collapsed?: boolean; userRole: UserRole | string }) {
   const currentPath = usePathname();
+  const visibleItems = items.filter((item) => !item.adminOnly || userRole === "ADMIN");
 
   return (
     <aside
@@ -43,7 +46,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
       </div>
 
       <nav className="space-y-2">
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const active = currentPath.startsWith(item.href);
 
