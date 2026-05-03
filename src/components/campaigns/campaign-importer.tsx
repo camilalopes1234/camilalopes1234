@@ -124,26 +124,26 @@ export function CampaignImporter({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const previewRows = useMemo(() => rows.slice(0, 5), [rows]);
+  const previewRows = useMemo(() => rows.slice(0, 4), [rows]);
 
   return (
-    <Card className="space-y-5">
-      <div>
-        <h3 className="text-lg font-semibold text-slate-950">Importar contatos via CSV</h3>
-        <p className="text-sm text-slate-500">
-          Suba uma planilha com contatos de campanha, mapeie as colunas e alimente automaticamente os leads que serao usados nos disparos.
+    <Card className="space-y-4">
+      <div className="space-y-1">
+        <h3 className="text-base font-semibold text-slate-950">Importar contatos via CSV</h3>
+        <p className="text-[13px] text-slate-500">
+          Suba uma planilha de contatos, mapeie as colunas e alimente automaticamente os leads que serao usados nos disparos.
         </p>
       </div>
 
-      <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/80 p-5">
+      <div className="rounded-[22px] border border-dashed border-slate-300 bg-slate-50/80 p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
-            <div className="rounded-2xl bg-sky-100 p-3 text-sky-700">
-              <UploadCloud className="h-5 w-5" />
+            <div className="rounded-xl bg-sky-100 p-2.5 text-sky-700">
+              <UploadCloud className="h-4 w-4" />
             </div>
             <div>
               <p className="font-medium text-slate-950">{fileName || "Nenhum arquivo selecionado"}</p>
-              <p className="text-sm text-slate-500">Aceita CSV separado por virgula ou ponto e virgula.</p>
+              <p className="text-[13px] text-slate-500">Aceita CSV separado por virgula ou ponto e virgula.</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -201,7 +201,7 @@ export function CampaignImporter({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         <Field label="Responsavel padrao dos contatos">
           <Select value={defaultOwnerId} onChange={(event) => setDefaultOwnerId(event.target.value)} disabled={currentUserRole !== "ADMIN"}>
             {owners.map((owner) => (
@@ -220,14 +220,14 @@ export function CampaignImporter({
       </div>
 
       {headers.length > 0 ? (
-        <div className="space-y-4">
-          <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+        <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+          <div className="rounded-[22px] border border-slate-200 bg-white p-3.5">
             <p className="font-medium text-slate-950">Mapeamento de colunas</p>
-            <p className="mt-1 text-sm text-slate-500">Revise cada coluna e diga ao CRM o que ela representa.</p>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <p className="mt-1 text-[13px] text-slate-500">Revise cada coluna e diga ao CRM o que ela representa.</p>
+            <div className="mt-3 grid gap-2.5 md:grid-cols-2">
               {headers.map((header) => (
-                <div key={header} className="rounded-[20px] border border-slate-100 bg-slate-50/70 p-3">
-                  <p className="mb-2 text-sm font-medium text-slate-900">{header}</p>
+                <div key={header} className="rounded-[18px] border border-slate-100 bg-slate-50/70 p-2.5">
+                  <p className="mb-1.5 text-[13px] font-medium text-slate-900">{header}</p>
                   <Select value={mapping[header] ?? "ignore"} onChange={(event) => setMapping((current) => ({ ...current, [header]: event.target.value }))}>
                     {importFields.map((field) => (
                       <option key={field.value} value={field.value}>
@@ -240,20 +240,20 @@ export function CampaignImporter({
             </div>
           </div>
 
-          <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+          <div className="rounded-[22px] border border-slate-200 bg-white p-3.5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium text-slate-950">Pre-visualizacao</p>
-                <p className="text-sm text-slate-500">Primeiras {previewRows.length} linhas do arquivo.</p>
+                <p className="text-[13px] text-slate-500">Primeiras {previewRows.length} linhas do arquivo.</p>
               </div>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">{rows.length} linhas lidas</span>
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600">{rows.length} linhas lidas</span>
             </div>
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <div className="mt-3 overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 text-[13px]">
                 <thead>
                   <tr>
                     {headers.map((header) => (
-                      <th key={header} className="px-3 py-2 text-left font-medium text-slate-500">
+                      <th key={header} className="px-2.5 py-2 text-left font-medium text-slate-500">
                         {header}
                       </th>
                     ))}
@@ -263,7 +263,7 @@ export function CampaignImporter({
                   {previewRows.map((row, index) => (
                     <tr key={`${row[headers[0]]}-${index}`}>
                       {headers.map((header) => (
-                        <td key={`${header}-${index}`} className="px-3 py-2 text-slate-700">
+                        <td key={`${header}-${index}`} className="px-2.5 py-2 text-slate-700">
                           {row[header]}
                         </td>
                       ))}

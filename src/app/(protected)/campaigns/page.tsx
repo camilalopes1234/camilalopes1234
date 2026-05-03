@@ -21,11 +21,11 @@ export default async function CampaignsPage() {
   const importTemplate = getLeadImportTemplate();
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-[32px] border border-white/70 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_42%),linear-gradient(135deg,#ffffff_0%,#f8fafc_45%,#ecfeff_100%)] p-6 shadow-[var(--shadow)]">
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-sky-700">WhatsApp</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Campanhas em massa</h1>
-        <p className="mt-3 max-w-3xl text-sm text-slate-600">
+    <div className="space-y-5">
+      <div className="rounded-[30px] border border-white/70 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_42%),linear-gradient(135deg,#ffffff_0%,#f8fafc_45%,#ecfeff_100%)] p-5 shadow-[var(--shadow)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">WhatsApp</p>
+        <h1 className="mt-2 text-[30px] font-semibold tracking-tight text-slate-950">Campanhas em massa</h1>
+        <p className="mt-2.5 max-w-3xl text-[13px] leading-5 text-slate-600">
           Planeje reativacoes, follow-ups e comunicacoes segmentadas com filtros comerciais, templates e historico de envio por destinatario.
         </p>
       </div>
@@ -38,11 +38,7 @@ export default async function CampaignsPage() {
         whatsappConfigured={isWhatsappConfigured()}
       />
 
-      <CampaignImporter
-        owners={owners}
-        importFields={importTemplate.expectedFields}
-        currentUserRole={session.user.role}
-      />
+      <CampaignImporter owners={owners} importFields={importTemplate.expectedFields} currentUserRole={session.user.role} />
     </div>
   );
 }

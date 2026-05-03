@@ -16,32 +16,32 @@ export function DashboardCharts({
   sources: ChartItem[];
 }) {
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
-      <Card className="h-[360px] border-white/80 md:h-96">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-950">Leads por etapa</h3>
-          <p className="text-sm text-slate-500">Leitura rápida do funil comercial atual.</p>
+    <div className="grid gap-4 xl:grid-cols-[1.5fr_0.98fr]">
+      <Card className="h-[332px] border-white/80 md:h-[360px]">
+        <div className="mb-3">
+          <h3 className="text-base font-semibold text-slate-950">Leads por etapa</h3>
+          <p className="text-[13px] text-slate-500">Leitura rapida do funil comercial atual.</p>
         </div>
-        <ResponsiveContainer width="100%" height="85%">
-          <BarChart data={stages}>
+        <ResponsiveContainer width="100%" height="84%">
+          <BarChart data={stages} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
             <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
             <Tooltip />
-            <Bar dataKey="total" fill="#0f766e" radius={[12, 12, 0, 0]} maxBarSize={42} />
+            <Bar dataKey="total" fill="#0f766e" radius={[10, 10, 0, 0]} maxBarSize={38} />
           </BarChart>
         </ResponsiveContainer>
       </Card>
 
-      <Card className="h-[360px] border-white/80 md:h-96">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-950">Origens dos leads</h3>
-          <p className="text-sm text-slate-500">Entenda os canais com melhor tração.</p>
+      <Card className="h-[332px] border-white/80 md:h-[360px]">
+        <div className="mb-3">
+          <h3 className="text-base font-semibold text-slate-950">Origens dos leads</h3>
+          <p className="text-[13px] text-slate-500">Entenda os canais com melhor tracao.</p>
         </div>
-        <div className="grid h-[85%] gap-4 md:grid-cols-[1fr_180px] md:items-center">
+        <div className="grid h-[84%] gap-3 md:grid-cols-[1fr_170px] md:items-center">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={sources} dataKey="total" nameKey="label" innerRadius={62} outerRadius={98} paddingAngle={3}>
+              <Pie data={sources} dataKey="total" nameKey="label" innerRadius={58} outerRadius={92} paddingAngle={3}>
                 {sources.map((entry, index) => (
                   <Cell key={entry.label} fill={sourceColors[index % sourceColors.length]} />
                 ))}
@@ -51,12 +51,12 @@ export function DashboardCharts({
           </ResponsiveContainer>
           <div className="grid gap-2">
             {sources.map((item, index) => (
-              <div key={item.label} className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2">
+              <div key={item.label} className="flex items-center justify-between gap-2.5 rounded-xl bg-slate-50 px-3 py-2">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: sourceColors[index % sourceColors.length] }} />
-                  <span className="text-xs font-medium text-slate-600">{item.label}</span>
+                  <span className="text-[11px] font-medium text-slate-600">{item.label}</span>
                 </div>
-                <span className="text-xs font-semibold text-slate-900">{item.total}</span>
+                <span className="text-[11px] font-semibold text-slate-900">{item.total}</span>
               </div>
             ))}
           </div>
