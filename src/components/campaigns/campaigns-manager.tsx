@@ -8,9 +8,9 @@ import {
   WhatsAppCampaignStatus,
   WhatsAppTemplateCategory
 } from "@prisma/client";
-import { Megaphone, Send, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Megaphone, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -94,6 +94,10 @@ type CampaignItem = {
   }>;
 };
 
+type CampaignFormValues = Partial<CampaignItem>;
+
+const placeholderTokens = ["{{primeiro_nome}}", "{{nome}}", "{{cidade}}", "{{empresa}}", "{{interesse}}", "{{responsavel}}"];
+
 function getRecipientTone(status: CampaignItem["recipients"][number]["status"]): "default" | "success" | "warning" | "danger" | "info" {
   if (status === "FAILED") return "danger";
   if (status === "READ" || status === "DELIVERED") return "success";
@@ -117,170 +121,290 @@ function CampaignStatusBadge({ status }: { status: WhatsAppCampaignStatus }) {
   return <Badge tone={tone}>{whatsappCampaignStatusLabels[status]}</Badge>;
 }
 
+function progressWidth(total: number, value: number) {
+  if (!total || total <= 0) return "0%";
+  return `${Math.min(100, Math.round((value / total) * 100))}%`;
+}
+
+function samplePersonalization(message: string) {
+  return message
+    .replaceAll("{{primeiro_nome}}", "Mariana")
+    .replaceAll("{{nome}}", "Mariana Souza")
+    .replaceAll("{{cidade}}", "Sao Paulo")
+    .replaceAll("{{empresa}}", "Clinica Glow")
+    .replaceAll("{{interesse}}", "avaliacao premium")
+    .replaceAll("{{responsavel}}", "Camila");
+}
+
 function CampaignForm({
   templates,
   owners,
   initialValues,
   submitLabel,
-  currentUserRole
+  currentUserRole,
+  whatsappConfigured
 }: {
   templates: TemplateOption[];
   owners: OwnerOption[];
-  initialValues?: Partial<CampaignItem>;
+  initialValues?: CampaignFormValues;
   submitLabel: string;
   currentUserRole: "ADMIN" | "SELLER";
+  whatsappConfigured: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [sendMode, setSendMode] = useState<WhatsAppCampaignSendMode>(initialValues?.sendMode ?? WhatsAppCampaignSendMode.TEXT);
+  const [selectedTemplateId, setSelectedTemplateId] = useState(initialValues?.templateId ?? "");
+  const [messageBody, setMessageBody] = useState(initialValues?.messageBody ?? "");
+  const [searchValue, setSearchValue] = useState(initialValues?.audienceSearch ?? "");
+  const [filterCity, setFilterCity] = useState(initialValues?.filterCity ?? "");
+
+  const selectedTemplate = useMemo(
+    () => templates.find((template) => template.id === selectedTemplateId) ?? null,
+    [selectedTemplateId, templates]
+  );
+
+  const preflightChecks = [
+    { ok: whatsappConfigured, label: "WhatsApp oficial configurado" },
+    { ok: sendMode !== WhatsAppCampaignSendMode.TEMPLATE || Boolean(selectedTemplate?.isApproved), label: "Template aprovado para disparo oficial" },
+    { ok: messageBody.trim().length >= 8, label: "Mensagem base preenchida" },
+    { ok: Boolean(searchValue.trim() || filterCity.trim() || initialValues?.filterStage || initialValues?.filterSourcePrimary || initialValues?.filterTemperature || initialValues?.filterOwnerId), label: "Segmentacao minimamente definida" }
+  ];
+
+  const readyCount = preflightChecks.filter((item) => item.ok).length;
+
+  function applyTemplateToBody() {
+    if (!selectedTemplate) return;
+    setMessageBody(selectedTemplate.bodyText);
+    toast.success("Template aplicado na mensagem base.");
+  }
 
   return (
-    <form
-      className="grid gap-4 md:grid-cols-2"
-      onSubmit={(event) => {
-        event.preventDefault();
-        setError(null);
-        const formData = new FormData(event.currentTarget);
-        const payload = Object.fromEntries(formData.entries());
+    <div className="space-y-4">
+      {!whatsappConfigured ? (
+        <div className="rounded-[24px] border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-900">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-semibold">WhatsApp oficial ainda nao configurado.</p>
+              <p className="mt-1">
+                Voce ja pode montar templates, audiencia e campanhas, mas o disparo real so deve acontecer depois de concluir a integracao oficial da Meta.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-        startTransition(async () => {
-          const response = await fetch(initialValues?.id ? `/api/campaigns/${initialValues.id}` : "/api/campaigns", {
-            method: initialValues?.id ? "PATCH" : "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+      <Card className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-700" />
+            <p className="font-medium text-slate-950">Checklist de prontidao</p>
+          </div>
+          <div className="space-y-2">
+            {preflightChecks.map((item) => (
+              <div key={item.label} className="flex items-center gap-3 rounded-2xl bg-slate-50/80 px-3 py-2">
+                {item.ok ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-amber-600" />}
+                <span className="text-sm text-slate-700">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-sky-700" />
+            <p className="font-medium text-slate-950">Preview da mensagem</p>
+          </div>
+          <p className="rounded-[20px] bg-white px-4 py-3 text-sm leading-6 text-slate-700 shadow-sm">
+            {messageBody.trim() ? samplePersonalization(messageBody) : "Sua mensagem personalizada aparecera aqui assim que voce comecar a escrever."}
+          </p>
+          <p className="text-xs text-slate-500">
+            Prontidao: {readyCount}/{preflightChecks.length} checkpoints atendidos.
+          </p>
+        </div>
+      </Card>
+
+      <form
+        className="grid gap-4 md:grid-cols-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setError(null);
+          const formData = new FormData(event.currentTarget);
+          const payload = Object.fromEntries(formData.entries());
+
+          startTransition(async () => {
+            const response = await fetch(initialValues?.id ? `/api/campaigns/${initialValues.id}` : "/api/campaigns", {
+              method: initialValues?.id ? "PATCH" : "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+              setError(data.error ?? "Nao foi possivel salvar a campanha.");
+              toast.error(data.error ?? "Nao foi possivel salvar a campanha.");
+              return;
+            }
+
+            toast.success(initialValues?.id ? "Campanha atualizada." : "Campanha criada.");
+            router.refresh();
+            if (!initialValues?.id) {
+              event.currentTarget.reset();
+              setSendMode(WhatsAppCampaignSendMode.TEXT);
+              setSelectedTemplateId("");
+              setMessageBody("");
+              setSearchValue("");
+              setFilterCity("");
+            }
           });
-          const data = await response.json();
-
-          if (!response.ok) {
-            setError(data.error ?? "Nao foi possivel salvar a campanha.");
-            toast.error(data.error ?? "Nao foi possivel salvar a campanha.");
-            return;
-          }
-
-          toast.success(initialValues?.id ? "Campanha atualizada." : "Campanha criada.");
-          router.refresh();
-          if (!initialValues?.id) {
-            event.currentTarget.reset();
-            setSendMode(WhatsAppCampaignSendMode.TEXT);
-          }
-        });
-      }}
-    >
-      <Field label="Nome da campanha">
-        <Input name="title" defaultValue={initialValues?.title ?? ""} required />
-      </Field>
-      <Field label="Modo de envio">
-        <Select name="sendMode" defaultValue={initialValues?.sendMode ?? WhatsAppCampaignSendMode.TEXT} onChange={(event) => setSendMode(event.target.value as WhatsAppCampaignSendMode)}>
-          {Object.entries(whatsappCampaignSendModeLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <div className="md:col-span-2">
-        <Field label="Descricao interna">
-          <Textarea name="description" defaultValue={initialValues?.description ?? ""} placeholder="Objetivo, audiencia e observacoes da operacao." />
+        }}
+      >
+        <Field label="Nome da campanha">
+          <Input name="title" defaultValue={initialValues?.title ?? ""} required />
         </Field>
-      </div>
-      {sendMode === WhatsAppCampaignSendMode.TEMPLATE ? (
-        <Field label="Template oficial">
-          <Select name="templateId" defaultValue={initialValues?.templateId ?? ""} required>
-            <option value="">Selecione</option>
-            {templates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.displayName} {template.isApproved ? "" : "(rascunho)"}
+        <Field label="Modo de envio">
+          <Select
+            name="sendMode"
+            defaultValue={initialValues?.sendMode ?? WhatsAppCampaignSendMode.TEXT}
+            onChange={(event) => setSendMode(event.target.value as WhatsAppCampaignSendMode)}
+          >
+            {Object.entries(whatsappCampaignSendModeLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
               </option>
             ))}
           </Select>
         </Field>
-      ) : (
+        <div className="md:col-span-2">
+          <Field label="Descricao interna">
+            <Textarea name="description" defaultValue={initialValues?.description ?? ""} placeholder="Objetivo, audiencia e observacoes da operacao." />
+          </Field>
+        </div>
         <Field label="Template oficial">
-          <Select name="templateId" defaultValue={initialValues?.templateId ?? ""}>
-            <option value="">Opcional</option>
+          <Select
+            name="templateId"
+            defaultValue={initialValues?.templateId ?? ""}
+            onChange={(event) => setSelectedTemplateId(event.target.value)}
+            required={sendMode === WhatsAppCampaignSendMode.TEMPLATE}
+          >
+            <option value="">{sendMode === WhatsAppCampaignSendMode.TEMPLATE ? "Selecione um template" : "Opcional"}</option>
             {templates.map((template) => (
               <option key={template.id} value={template.id}>
-                {template.displayName}
+                {template.displayName} {template.isApproved ? "" : "(interno)"}
               </option>
             ))}
           </Select>
         </Field>
-      )}
-      <Field label="Responsavel alvo">
-        <Select name="filterOwnerId" defaultValue={initialValues?.filterOwnerId ?? ""} disabled={currentUserRole !== "ADMIN"}>
-          <option value="">Todos os responsaveis</option>
-          {owners.map((owner) => (
-            <option key={owner.id} value={owner.id}>
-              {owner.name}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <div className="md:col-span-2">
-        <Field label="Mensagem base">
-          <Textarea
-            name="messageBody"
-            defaultValue={initialValues?.messageBody ?? ""}
-            required
-            placeholder="Ex.: Oi {{primeiro_nome}}, aqui e {{responsavel}}. Quero te mostrar uma condicao especial para {{interesse}}."
+        <Field label="Responsavel alvo">
+          <Select name="filterOwnerId" defaultValue={initialValues?.filterOwnerId ?? ""} disabled={currentUserRole !== "ADMIN"}>
+            <option value="">Todos os responsaveis</option>
+            {owners.map((owner) => (
+              <option key={owner.id} value={owner.id}>
+                {owner.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        {selectedTemplate ? (
+          <div className="md:col-span-2 rounded-[24px] border border-sky-200 bg-sky-50/70 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-slate-950">{selectedTemplate.displayName}</p>
+                  <Badge tone={selectedTemplate.isApproved ? "success" : "warning"}>{selectedTemplate.isApproved ? "Aprovado" : "Interno"}</Badge>
+                  <Badge tone="info">{whatsappTemplateCategoryLabels[selectedTemplate.category]}</Badge>
+                </div>
+                <p className="mt-2 text-sm text-slate-600">{selectedTemplate.bodyText}</p>
+              </div>
+              <Button type="button" variant="ghost" onClick={applyTemplateToBody}>
+                Aplicar no campo abaixo
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="md:col-span-2">
+          <Field label="Mensagem base">
+            <Textarea
+              name="messageBody"
+              value={messageBody}
+              onChange={(event) => setMessageBody(event.target.value)}
+              required
+              placeholder="Ex.: Oi {{primeiro_nome}}, aqui e {{responsavel}}. Quero te mostrar uma condicao especial para {{interesse}}."
+            />
+          </Field>
+        </div>
+        <Field label="Etapa do funil">
+          <Select name="filterStage" defaultValue={initialValues?.filterStage ?? ""}>
+            <option value="">Todas</option>
+            {Object.entries(stageLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Origem principal">
+          <Select name="filterSourcePrimary" defaultValue={initialValues?.filterSourcePrimary ?? ""}>
+            <option value="">Todas</option>
+            {Object.entries(sourcePrimaryLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Temperatura">
+          <Select name="filterTemperature" defaultValue={initialValues?.filterTemperature ?? ""}>
+            <option value="">Todas</option>
+            {Object.entries(temperatureLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Cidade">
+          <Input name="filterCity" value={filterCity} onChange={(event) => setFilterCity(event.target.value)} placeholder="Ex.: Sao Paulo" />
+        </Field>
+        <Field label="Busca complementar">
+          <Input
+            name="audienceSearch"
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+            placeholder="Nome, telefone, empresa, interesse..."
           />
         </Field>
-      </div>
-      <Field label="Etapa do funil">
-        <Select name="filterStage" defaultValue={initialValues?.filterStage ?? ""}>
-          <option value="">Todas</option>
-          {Object.entries(stageLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <Field label="Origem principal">
-        <Select name="filterSourcePrimary" defaultValue={initialValues?.filterSourcePrimary ?? ""}>
-          <option value="">Todas</option>
-          {Object.entries(sourcePrimaryLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <Field label="Temperatura">
-        <Select name="filterTemperature" defaultValue={initialValues?.filterTemperature ?? ""}>
-          <option value="">Todas</option>
-          {Object.entries(temperatureLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <Field label="Cidade">
-        <Input name="filterCity" defaultValue={initialValues?.filterCity ?? ""} placeholder="Ex.: Sao Paulo" />
-      </Field>
-      <Field label="Busca complementar">
-        <Input name="audienceSearch" defaultValue={initialValues?.audienceSearch ?? ""} placeholder="Nome, telefone, empresa, interesse..." />
-      </Field>
-      <Field label="Agendamento futuro">
-        <Input name="scheduledAt" type="datetime-local" defaultValue={initialValues?.scheduledAt ? String(initialValues.scheduledAt).slice(0, 16) : ""} />
-      </Field>
-      <Field label="Exigir opt-in">
-        <Select name="requiresOptIn" defaultValue={String(initialValues?.requiresOptIn ?? false)}>
-          <option value="false">Nao</option>
-          <option value="true">Sim</option>
-        </Select>
-      </Field>
+        <Field label="Agendamento futuro">
+          <Input name="scheduledAt" type="datetime-local" defaultValue={initialValues?.scheduledAt ? String(initialValues.scheduledAt).slice(0, 16) : ""} />
+        </Field>
+        <Field label="Exigir opt-in">
+          <Select name="requiresOptIn" defaultValue={String(initialValues?.requiresOptIn ?? false)}>
+            <option value="false">Nao</option>
+            <option value="true">Sim</option>
+          </Select>
+        </Field>
 
-      {error ? <p className="md:col-span-2 text-sm text-rose-600">{error}</p> : null}
+        <div className="md:col-span-2 flex flex-wrap gap-2">
+          {placeholderTokens.map((token) => (
+            <span key={token} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+              {token}
+            </span>
+          ))}
+        </div>
 
-      <div className="md:col-span-2 flex justify-end">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Salvando..." : submitLabel}
-        </Button>
-      </div>
-    </form>
+        {error ? <p className="md:col-span-2 text-sm text-rose-600">{error}</p> : null}
+
+        <div className="md:col-span-2 flex justify-end">
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Salvando..." : submitLabel}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -391,15 +515,20 @@ export function CampaignsManager({
   templates,
   campaigns,
   owners,
-  currentUserRole
+  currentUserRole,
+  whatsappConfigured
 }: {
   templates: TemplateOption[];
   campaigns: CampaignItem[];
   owners: OwnerOption[];
   currentUserRole: "ADMIN" | "SELLER";
+  whatsappConfigured: boolean;
 }) {
   const router = useRouter();
   const [dispatchingId, setDispatchingId] = useState<string | null>(null);
+
+  const totalRecipients = campaigns.reduce((acc, campaign) => acc + campaign.recipientsCount, 0);
+  const totalDelivered = campaigns.reduce((acc, campaign) => acc + campaign.deliveredCount + campaign.readCount, 0);
 
   return (
     <div className="space-y-6">
@@ -417,7 +546,13 @@ export function CampaignsManager({
             </div>
           </div>
 
-          <CampaignForm templates={templates} owners={owners} submitLabel="Criar campanha" currentUserRole={currentUserRole} />
+          <CampaignForm
+            templates={templates}
+            owners={owners}
+            submitLabel="Criar campanha"
+            currentUserRole={currentUserRole}
+            whatsappConfigured={whatsappConfigured}
+          />
         </Card>
 
         <div className="space-y-4">
@@ -434,6 +569,14 @@ export function CampaignsManager({
               <p className="text-sm text-amber-700">Prontas para disparo</p>
               <p className="mt-2 text-3xl font-semibold text-amber-950">{campaigns.filter((campaign) => campaign.status === WhatsAppCampaignStatus.READY).length}</p>
             </div>
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-sm text-slate-600">Alcance total previsto</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{totalRecipients}</p>
+            </div>
+            <div className="rounded-[24px] border border-teal-100 bg-teal-50/80 p-4">
+              <p className="text-sm text-teal-700">Entregas/Lidas</p>
+              <p className="mt-2 text-3xl font-semibold text-teal-950">{totalDelivered}</p>
+            </div>
           </Card>
 
           <TemplateForm templates={templates} />
@@ -441,13 +584,17 @@ export function CampaignsManager({
       </section>
 
       <section className="space-y-4">
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-slate-950">Campanhas salvas</h2>
             <p className="text-sm text-slate-500">Envie apenas com template aprovado, base filtrada e historico completo por destinatario.</p>
           </div>
-          <div className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium text-emerald-700">
-            Placeholders: {"{{primeiro_nome}} {{nome}} {{cidade}} {{empresa}} {{interesse}} {{responsavel}}"}
+          <div className="flex flex-wrap gap-2">
+            {placeholderTokens.map((token) => (
+              <span key={token} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                {token}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -476,8 +623,14 @@ export function CampaignsManager({
                   <div className="flex flex-wrap items-center gap-2">
                     <Button
                       type="button"
-                      disabled={dispatchingId === campaign.id}
+                      disabled={dispatchingId === campaign.id || (!whatsappConfigured && campaign.sendMode === WhatsAppCampaignSendMode.TEMPLATE)}
                       onClick={() => {
+                        const confirmed = window.confirm(
+                          `Voce vai disparar a campanha "${campaign.title}" para ate ${campaign.recipientsCount} destinatarios. Deseja continuar?`
+                        );
+
+                        if (!confirmed) return;
+
                         setDispatchingId(campaign.id);
                         void fetch(`/api/campaigns/${campaign.id}/dispatch`, { method: "POST" })
                           .then(async (response) => {
@@ -497,6 +650,16 @@ export function CampaignsManager({
                       <Send className="mr-2 h-4 w-4" />
                       {dispatchingId === campaign.id ? "Disparando..." : "Disparar agora"}
                     </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>Entregabilidade</span>
+                    <span>{campaign.recipientsCount > 0 ? Math.round(((campaign.deliveredCount + campaign.readCount) / campaign.recipientsCount) * 100) : 0}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-100">
+                    <div className="h-2 rounded-full bg-emerald-500" style={{ width: progressWidth(campaign.recipientsCount, campaign.deliveredCount + campaign.readCount) }} />
                   </div>
                 </div>
 
@@ -527,11 +690,11 @@ export function CampaignsManager({
                   </div>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                <div className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
                   <div className="space-y-4">
                     <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
                       <p className="text-sm font-medium text-slate-900">Mensagem base</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{campaign.messageBody}</p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{campaign.messageBody}</p>
                     </div>
 
                     <CampaignForm
@@ -540,6 +703,7 @@ export function CampaignsManager({
                       initialValues={campaign}
                       submitLabel="Salvar alteracoes"
                       currentUserRole={currentUserRole}
+                      whatsappConfigured={whatsappConfigured}
                     />
                   </div>
 
@@ -572,9 +736,7 @@ export function CampaignsManager({
                                   <p className="truncate font-medium text-slate-950">{recipient.lead.fullName}</p>
                                   <p className="truncate text-xs text-slate-500">{recipient.lead.whatsapp || recipient.lead.phone}</p>
                                 </div>
-                                <Badge tone={getRecipientTone(recipient.status)}>
-                                  {whatsappCampaignRecipientStatusLabels[recipient.status]}
-                                </Badge>
+                                <Badge tone={getRecipientTone(recipient.status)}>{whatsappCampaignRecipientStatusLabels[recipient.status]}</Badge>
                               </div>
                               <p className="mt-2 line-clamp-2 text-xs text-slate-500">{recipient.personalizedBody || "Personalizacao sera aplicada no disparo."}</p>
                               {recipient.failureReason ? <p className="mt-2 text-xs text-rose-600">{recipient.failureReason}</p> : null}

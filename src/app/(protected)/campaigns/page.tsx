@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { CampaignsManager } from "@/components/campaigns/campaigns-manager";
 import { getAssignableUsers } from "@/server/demo/users";
 import { getWhatsappCampaigns, getWhatsappTemplates } from "@/server/queries/campaigns";
+import { isWhatsappConfigured } from "@/server/services/whatsapp-service";
 
 export default async function CampaignsPage() {
   const session = await auth();
@@ -26,7 +27,13 @@ export default async function CampaignsPage() {
         </p>
       </div>
 
-      <CampaignsManager templates={templates} campaigns={campaigns} owners={owners} currentUserRole={session.user.role} />
+      <CampaignsManager
+        templates={templates}
+        campaigns={campaigns}
+        owners={owners}
+        currentUserRole={session.user.role}
+        whatsappConfigured={isWhatsappConfigured()}
+      />
     </div>
   );
 }
