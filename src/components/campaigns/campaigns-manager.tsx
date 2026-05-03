@@ -4,11 +4,12 @@ import {
   LeadSourcePrimary,
   LeadStage,
   LeadTemperature,
+  WhatsAppCampaignRecipientStatus,
   WhatsAppCampaignSendMode,
   WhatsAppCampaignStatus,
   WhatsAppTemplateCategory
 } from "@prisma/client";
-import { AlertTriangle, CheckCircle2, Megaphone, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, Filter, Megaphone, RotateCcw, Search, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -48,6 +49,26 @@ type TemplateOption = {
   isApproved: boolean;
 };
 
+type CampaignRecipientItem = {
+  id: string;
+  phone: string;
+  personalizedBody: string | null;
+  status: WhatsAppCampaignRecipientStatus;
+  failureReason: string | null;
+  providerMessageId?: string | null;
+  sentAt?: string | Date | null;
+  deliveredAt?: string | Date | null;
+  readAt?: string | Date | null;
+  lastTriedAt?: string | Date | null;
+  lead: {
+    id: string;
+    fullName: string;
+    whatsapp: string | null;
+    phone: string;
+    city: string | null;
+  };
+};
+
 type CampaignItem = {
   id: string;
   title: string;
@@ -79,26 +100,14 @@ type CampaignItem = {
     name: string;
     role: "ADMIN" | "SELLER";
   };
-  recipients: Array<{
-    id: string;
-    personalizedBody: string | null;
-    status: "QUEUED" | "SENT" | "DELIVERED" | "READ" | "FAILED" | "SKIPPED";
-    failureReason: string | null;
-    lead: {
-      id: string;
-      fullName: string;
-      whatsapp: string | null;
-      phone: string;
-      city: string | null;
-    };
-  }>;
+  recipients: CampaignRecipientItem[];
 };
 
 type CampaignFormValues = Partial<CampaignItem>;
 
 const placeholderTokens = ["{{primeiro_nome}}", "{{nome}}", "{{cidade}}", "{{empresa}}", "{{interesse}}", "{{responsavel}}"];
 
-function getRecipientTone(status: CampaignItem["recipients"][number]["status"]): "default" | "success" | "warning" | "danger" | "info" {
+function getRecipientTone(status: CampaignRecipientItem["status"]): "default" | "success" | "warning" | "danger" | "info" {
   if (status === "FAILED") return "danger";
   if (status === "READ" || status === "DELIVERED") return "success";
   if (status === "SENT") return "info";
@@ -136,6 +145,37 @@ function samplePersonalization(message: string) {
     .replaceAll("{{responsavel}}", "Camila");
 }
 
+function downloadRecipientsCsv(campaign: CampaignItem, recipients: CampaignRecipientItem[]) {
+  const headers = ["Lead", "Telefone", "Status", "Cidade", "Enviado em", "Entregue em", "Lido em", "Falha", "Mensagem"];
+  const rows = recipients.map((recipient) => [
+    recipient.lead.fullName,
+    recipient.lead.whatsapp || recipient.lead.phone || recipient.phone,
+    whatsappCampaignRecipientStatusLabels[recipient.status],
+    recipient.lead.city || "",
+    recipient.sentAt ? formatDateTime(recipient.sentAt) : "",
+    recipient.deliveredAt ? formatDateTime(recipient.deliveredAt) : "",
+    recipient.readAt ? formatDateTime(recipient.readAt) : "",
+    recipient.failureReason || "",
+    (recipient.personalizedBody || "").replace(/\n/g, " ")
+  ]);
+
+  const csv = [headers, ...rows]
+    .map((row) =>
+      row
+        .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
+        .join(";")
+    )
+    .join("\n");
+
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${campaign.title.toLowerCase().replaceAll(/\s+/g, "-")}-destinatarios.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function CampaignForm({
   templates,
   owners,
@@ -169,7 +209,17 @@ function CampaignForm({
     { ok: whatsappConfigured, label: "WhatsApp oficial configurado" },
     { ok: sendMode !== WhatsAppCampaignSendMode.TEMPLATE || Boolean(selectedTemplate?.isApproved), label: "Template aprovado para disparo oficial" },
     { ok: messageBody.trim().length >= 8, label: "Mensagem base preenchida" },
-    { ok: Boolean(searchValue.trim() || filterCity.trim() || initialValues?.filterStage || initialValues?.filterSourcePrimary || initialValues?.filterTemperature || initialValues?.filterOwnerId), label: "Segmentacao minimamente definida" }
+    {
+      ok: Boolean(
+        searchValue.trim() ||
+          filterCity.trim() ||
+          initialValues?.filterStage ||
+          initialValues?.filterSourcePrimary ||
+          initialValues?.filterTemperature ||
+          initialValues?.filterOwnerId
+      ),
+      label: "Segmentacao minimamente definida"
+    }
   ];
 
   const readyCount = preflightChecks.filter((item) => item.ok).length;
@@ -220,9 +270,7 @@ function CampaignForm({
           <p className="rounded-[18px] bg-white px-3.5 py-3 text-[13px] leading-5 text-slate-700 shadow-sm">
             {messageBody.trim() ? samplePersonalization(messageBody) : "Sua mensagem personalizada aparecera aqui assim que voce comecar a escrever."}
           </p>
-          <p className="text-xs text-slate-500">
-            Prontidao: {readyCount}/{preflightChecks.length} checkpoints atendidos.
-          </p>
+          <p className="text-xs text-slate-500">Prontidao: {readyCount}/{preflightChecks.length} checkpoints atendidos.</p>
         </div>
       </Card>
 
@@ -507,12 +555,153 @@ function TemplateForm({ templates }: { templates: TemplateOption[] }) {
               <Badge tone="info">{whatsappTemplateCategoryLabels[template.category]}</Badge>
             </div>
             <p className="mt-2 text-sm text-slate-500">{template.bodyText}</p>
-            <p className="mt-2 text-xs text-slate-400">
-              Nome tecnico: {template.name} · Idioma: {template.languageCode}
-            </p>
+            <p className="mt-2 text-xs text-slate-400">Nome tecnico: {template.name} · Idioma: {template.languageCode}</p>
           </div>
         ))}
       </div>
+    </Card>
+  );
+}
+
+function CampaignRecipientsPanel({
+  campaign,
+  onDispatch,
+  isDispatching
+}: {
+  campaign: CampaignItem;
+  onDispatch: (campaignId: string, mode: "all" | "failed") => void;
+  isDispatching: boolean;
+}) {
+  const [statusFilter, setStatusFilter] = useState<"ALL" | WhatsAppCampaignRecipientStatus>("ALL");
+  const [search, setSearch] = useState("");
+
+  const filteredRecipients = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return campaign.recipients.filter((recipient) => {
+      if (statusFilter !== "ALL" && recipient.status !== statusFilter) return false;
+      if (!query) return true;
+
+      return [recipient.lead.fullName, recipient.lead.phone, recipient.lead.whatsapp, recipient.lead.city, recipient.failureReason]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [campaign.recipients, search, statusFilter]);
+
+  const deliveryRate = campaign.recipientsCount > 0 ? Math.round(((campaign.deliveredCount + campaign.readCount) / campaign.recipientsCount) * 100) : 0;
+  const readRate = campaign.recipientsCount > 0 ? Math.round((campaign.readCount / campaign.recipientsCount) * 100) : 0;
+  const failureRate = campaign.recipientsCount > 0 ? Math.round((campaign.failedCount / campaign.recipientsCount) * 100) : 0;
+
+  return (
+    <Card className="space-y-4 border-slate-200 bg-white">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-base font-semibold text-slate-950">Destinatarios da campanha</p>
+          <p className="text-[13px] text-slate-500">Acompanhe quem recebeu, quem falhou e quem foi ignorado.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="ghost" onClick={() => downloadRecipientsCsv(campaign, filteredRecipients)} disabled={filteredRecipients.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => onDispatch(campaign.id, "failed")} disabled={isDispatching || campaign.failedCount === 0}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Reenviar falhas
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-2.5 md:grid-cols-3">
+        <div className="rounded-[18px] border border-emerald-100 bg-emerald-50/70 p-3">
+          <p className="text-[11px] uppercase tracking-[0.08em] text-emerald-700">Entrega</p>
+          <p className="mt-1 text-xl font-semibold text-emerald-950">{deliveryRate}%</p>
+        </div>
+        <div className="rounded-[18px] border border-sky-100 bg-sky-50/70 p-3">
+          <p className="text-[11px] uppercase tracking-[0.08em] text-sky-700">Leitura</p>
+          <p className="mt-1 text-xl font-semibold text-sky-950">{readRate}%</p>
+        </div>
+        <div className="rounded-[18px] border border-rose-100 bg-rose-50/70 p-3">
+          <p className="text-[11px] uppercase tracking-[0.08em] text-rose-700">Falha</p>
+          <p className="mt-1 text-xl font-semibold text-rose-950">{failureRate}%</p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-[0.9fr_0.7fr_0.5fr]">
+        <label className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" placeholder="Buscar nome, telefone ou cidade" />
+        </label>
+        <Field label="Status">
+          <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "ALL" | WhatsAppCampaignRecipientStatus)}>
+            <option value="ALL">Todos os status</option>
+            {Object.entries(whatsappCampaignRecipientStatusLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <div className="flex items-end">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] font-medium text-slate-600">
+            <Filter className="h-3.5 w-3.5" />
+            {filteredRecipients.length} visiveis
+          </div>
+        </div>
+      </div>
+
+      {filteredRecipients.length === 0 ? (
+        <div className="rounded-[18px] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-6 text-center text-sm text-slate-500">
+          Nenhum destinatario encontrado com esse filtro.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-[13px]">
+            <thead className="bg-slate-50/80 text-slate-500">
+              <tr>
+                <th className="px-3 py-2.5 font-medium">Lead</th>
+                <th className="px-3 py-2.5 font-medium">Telefone</th>
+                <th className="px-3 py-2.5 font-medium">Status</th>
+                <th className="px-3 py-2.5 font-medium">Ultima tentativa</th>
+                <th className="px-3 py-2.5 font-medium">Mensagem</th>
+                <th className="px-3 py-2.5 font-medium">Falha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRecipients.map((recipient) => (
+                <tr key={recipient.id} className="border-t border-slate-100">
+                  <td className="px-3 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-950">{recipient.lead.fullName}</p>
+                      <p className="truncate text-xs text-slate-500">{recipient.lead.city || "Sem cidade"}</p>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-slate-600">{recipient.lead.whatsapp || recipient.lead.phone || recipient.phone}</td>
+                  <td className="px-3 py-3">
+                    <Badge tone={getRecipientTone(recipient.status)}>{whatsappCampaignRecipientStatusLabels[recipient.status]}</Badge>
+                  </td>
+                  <td className="px-3 py-3 text-slate-600">
+                    {recipient.readAt
+                      ? `Lido ${formatDateTime(recipient.readAt)}`
+                      : recipient.deliveredAt
+                        ? `Entregue ${formatDateTime(recipient.deliveredAt)}`
+                        : recipient.sentAt
+                          ? `Enviado ${formatDateTime(recipient.sentAt)}`
+                          : recipient.lastTriedAt
+                            ? formatDateTime(recipient.lastTriedAt)
+                            : "Ainda nao tentou"}
+                  </td>
+                  <td className="max-w-[340px] px-3 py-3 text-slate-500">
+                    <p className="line-clamp-2">{recipient.personalizedBody || "Personalizacao sera aplicada no disparo."}</p>
+                  </td>
+                  <td className="px-3 py-3 text-rose-600">{recipient.failureReason || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Card>
   );
 }
@@ -531,10 +720,43 @@ export function CampaignsManager({
   whatsappConfigured: boolean;
 }) {
   const router = useRouter();
-  const [dispatchingId, setDispatchingId] = useState<string | null>(null);
+  const [dispatchingKey, setDispatchingKey] = useState<string | null>(null);
 
   const totalRecipients = campaigns.reduce((acc, campaign) => acc + campaign.recipientsCount, 0);
   const totalDelivered = campaigns.reduce((acc, campaign) => acc + campaign.deliveredCount + campaign.readCount, 0);
+
+  function handleDispatch(campaign: CampaignItem, mode: "all" | "failed") {
+    const actionLabel = mode === "failed" ? "reenviar as falhas" : "disparar a campanha";
+    const audienceLabel = mode === "failed" ? `${campaign.failedCount} falhas` : `ate ${campaign.recipientsCount} destinatarios`;
+    const confirmed = window.confirm(`Voce vai ${actionLabel} "${campaign.title}" para ${audienceLabel}. Deseja continuar?`);
+
+    if (!confirmed) return;
+
+    const key = `${campaign.id}:${mode}`;
+    setDispatchingKey(key);
+
+    void fetch(`/api/campaigns/${campaign.id}/dispatch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode })
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error ?? "Nao foi possivel processar a campanha.");
+        }
+        toast.success(
+          mode === "failed"
+            ? `Reenvio concluido para ${data.processed} destinatarios com falha.`
+            : `Campanha disparada para ${data.processed} destinatarios.`
+        );
+        router.refresh();
+      })
+      .catch((error: Error) => {
+        toast.error(error.message);
+      })
+      .finally(() => setDispatchingKey(null));
+  }
 
   return (
     <div className="space-y-6">
@@ -611,150 +833,147 @@ export function CampaignsManager({
           />
         ) : (
           <div className="grid gap-4">
-            {campaigns.map((campaign) => (
-              <Card key={campaign.id} className="space-y-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
+            {campaigns.map((campaign) => {
+              const deliveryRate = campaign.recipientsCount > 0 ? Math.round(((campaign.deliveredCount + campaign.readCount) / campaign.recipientsCount) * 100) : 0;
+              const openRate = campaign.recipientsCount > 0 ? Math.round((campaign.readCount / campaign.recipientsCount) * 100) : 0;
+              const dispatchKeyAll = `${campaign.id}:all`;
+              const dispatchKeyFailed = `${campaign.id}:failed`;
+
+              return (
+                <Card key={campaign.id} className="space-y-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-lg font-semibold text-slate-950">{campaign.title}</p>
+                        <CampaignStatusBadge status={campaign.status} />
+                        <Badge tone="info">{whatsappCampaignSendModeLabels[campaign.sendMode]}</Badge>
+                        {campaign.template ? <Badge tone={campaign.template.isApproved ? "success" : "warning"}>{campaign.template.displayName}</Badge> : null}
+                      </div>
+                      <p className="mt-2 text-sm text-slate-500">{campaign.description || "Sem descricao interna."}</p>
+                      <p className="mt-2 text-xs text-slate-400">
+                        Criada por {campaign.createdBy.name} ({roleLabels[campaign.createdBy.role]}) em {formatDateTime(campaign.createdAt)}
+                      </p>
+                    </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-lg font-semibold text-slate-950">{campaign.title}</p>
-                      <CampaignStatusBadge status={campaign.status} />
-                      <Badge tone="info">{whatsappCampaignSendModeLabels[campaign.sendMode]}</Badge>
-                      {campaign.template ? <Badge tone={campaign.template.isApproved ? "success" : "warning"}>{campaign.template.displayName}</Badge> : null}
+                      <Button
+                        type="button"
+                        disabled={dispatchingKey === dispatchKeyAll || (!whatsappConfigured && campaign.sendMode === WhatsAppCampaignSendMode.TEMPLATE)}
+                        onClick={() => handleDispatch(campaign, "all")}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        {dispatchingKey === dispatchKeyAll ? "Disparando..." : "Disparar agora"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={dispatchingKey === dispatchKeyFailed || campaign.failedCount === 0}
+                        onClick={() => handleDispatch(campaign, "failed")}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        {dispatchingKey === dispatchKeyFailed ? "Reenviando..." : "Reenviar falhas"}
+                      </Button>
                     </div>
-                    <p className="mt-2 text-sm text-slate-500">{campaign.description || "Sem descricao interna."}</p>
-                    <p className="mt-2 text-xs text-slate-400">
-                      Criada por {campaign.createdBy.name} ({roleLabels[campaign.createdBy.role]}) em {formatDateTime(campaign.createdAt)}
-                    </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      disabled={dispatchingId === campaign.id || (!whatsappConfigured && campaign.sendMode === WhatsAppCampaignSendMode.TEMPLATE)}
-                      onClick={() => {
-                        const confirmed = window.confirm(
-                          `Voce vai disparar a campanha "${campaign.title}" para ate ${campaign.recipientsCount} destinatarios. Deseja continuar?`
-                        );
 
-                        if (!confirmed) return;
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>Entregabilidade</span>
+                      <span>{deliveryRate}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100">
+                      <div className="h-2 rounded-full bg-emerald-500" style={{ width: progressWidth(campaign.recipientsCount, campaign.deliveredCount + campaign.readCount) }} />
+                    </div>
+                  </div>
 
-                        setDispatchingId(campaign.id);
-                        void fetch(`/api/campaigns/${campaign.id}/dispatch`, { method: "POST" })
-                          .then(async (response) => {
-                            const data = await response.json();
-                            if (!response.ok) {
-                              throw new Error(data.error ?? "Nao foi possivel disparar a campanha.");
-                            }
-                            toast.success(`Campanha disparada para ${data.processed} destinatarios.`);
-                            router.refresh();
-                          })
-                          .catch((error: Error) => {
-                            toast.error(error.message);
-                          })
-                          .finally(() => setDispatchingId(null));
-                      }}
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      {dispatchingId === campaign.id ? "Disparando..." : "Disparar agora"}
-                    </Button>
+                  <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-8">
+                    <div className="rounded-[20px] border border-slate-200 bg-slate-50/70 p-3">
+                      <p className="text-xs text-slate-500">Destinatarios</p>
+                      <p className="mt-1 text-xl font-semibold text-slate-950">{campaign.recipientsCount}</p>
+                    </div>
+                    <div className="rounded-[20px] border border-sky-100 bg-sky-50/70 p-3">
+                      <p className="text-xs text-sky-700">Enviadas</p>
+                      <p className="mt-1 text-xl font-semibold text-sky-950">{campaign.sentCount}</p>
+                    </div>
+                    <div className="rounded-[20px] border border-emerald-100 bg-emerald-50/70 p-3">
+                      <p className="text-xs text-emerald-700">Entregues</p>
+                      <p className="mt-1 text-xl font-semibold text-emerald-950">{campaign.deliveredCount}</p>
+                    </div>
+                    <div className="rounded-[20px] border border-teal-100 bg-teal-50/70 p-3">
+                      <p className="text-xs text-teal-700">Lidas</p>
+                      <p className="mt-1 text-xl font-semibold text-teal-950">{campaign.readCount}</p>
+                    </div>
+                    <div className="rounded-[20px] border border-rose-100 bg-rose-50/70 p-3">
+                      <p className="text-xs text-rose-700">Falhas</p>
+                      <p className="mt-1 text-xl font-semibold text-rose-950">{campaign.failedCount}</p>
+                    </div>
+                    <div className="rounded-[20px] border border-amber-100 bg-amber-50/70 p-3">
+                      <p className="text-xs text-amber-700">Ignoradas</p>
+                      <p className="mt-1 text-xl font-semibold text-amber-950">{campaign.skippedCount}</p>
+                    </div>
+                    <div className="rounded-[20px] border border-sky-100 bg-sky-50/70 p-3">
+                      <p className="text-xs text-sky-700">Taxa de leitura</p>
+                      <p className="mt-1 text-xl font-semibold text-sky-950">{openRate}%</p>
+                    </div>
+                    <div className="rounded-[20px] border border-slate-200 bg-white p-3">
+                      <p className="text-xs text-slate-500">Ultimo disparo</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-950">{campaign.lastDispatchAt ? formatDateTime(campaign.lastDispatchAt) : "Nunca"}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>Entregabilidade</span>
-                    <span>{campaign.recipientsCount > 0 ? Math.round(((campaign.deliveredCount + campaign.readCount) / campaign.recipientsCount) * 100) : 0}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-slate-100">
-                    <div className="h-2 rounded-full bg-emerald-500" style={{ width: progressWidth(campaign.recipientsCount, campaign.deliveredCount + campaign.readCount) }} />
-                  </div>
-                </div>
+                  <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+                    <div className="space-y-4">
+                      <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
+                        <p className="text-sm font-medium text-slate-900">Mensagem base</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{campaign.messageBody}</p>
+                      </div>
 
-                <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-                  <div className="rounded-[20px] border border-slate-200 bg-slate-50/70 p-3">
-                    <p className="text-xs text-slate-500">Destinatarios</p>
-                    <p className="mt-1 text-xl font-semibold text-slate-950">{campaign.recipientsCount}</p>
-                  </div>
-                  <div className="rounded-[20px] border border-sky-100 bg-sky-50/70 p-3">
-                    <p className="text-xs text-sky-700">Enviadas</p>
-                    <p className="mt-1 text-xl font-semibold text-sky-950">{campaign.sentCount}</p>
-                  </div>
-                  <div className="rounded-[20px] border border-emerald-100 bg-emerald-50/70 p-3">
-                    <p className="text-xs text-emerald-700">Entregues/Lidas</p>
-                    <p className="mt-1 text-xl font-semibold text-emerald-950">{campaign.deliveredCount + campaign.readCount}</p>
-                  </div>
-                  <div className="rounded-[20px] border border-rose-100 bg-rose-50/70 p-3">
-                    <p className="text-xs text-rose-700">Falhas</p>
-                    <p className="mt-1 text-xl font-semibold text-rose-950">{campaign.failedCount}</p>
-                  </div>
-                  <div className="rounded-[20px] border border-amber-100 bg-amber-50/70 p-3">
-                    <p className="text-xs text-amber-700">Ignoradas</p>
-                    <p className="mt-1 text-xl font-semibold text-amber-950">{campaign.skippedCount}</p>
-                  </div>
-                  <div className="rounded-[20px] border border-slate-200 bg-white p-3">
-                    <p className="text-xs text-slate-500">Ultimo disparo</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-950">{campaign.lastDispatchAt ? formatDateTime(campaign.lastDispatchAt) : "Nunca"}</p>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-[1.12fr_0.88fr]">
-                  <div className="space-y-4">
-                    <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
-                      <p className="text-sm font-medium text-slate-900">Mensagem base</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{campaign.messageBody}</p>
+                      <CampaignRecipientsPanel
+                        campaign={campaign}
+                        onDispatch={(_, mode) => handleDispatch(campaign, mode)}
+                        isDispatching={dispatchingKey === dispatchKeyAll || dispatchingKey === dispatchKeyFailed}
+                      />
                     </div>
 
-                    <CampaignForm
-                      templates={templates}
-                      owners={owners}
-                      initialValues={campaign}
-                      submitLabel="Salvar alteracoes"
-                      currentUserRole={currentUserRole}
-                      whatsappConfigured={whatsappConfigured}
-                    />
-                  </div>
+                    <div className="space-y-4">
+                      <Card className="space-y-3 border-slate-200 bg-slate-50/70">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="h-4 w-4 text-emerald-700" />
+                          <p className="font-medium text-slate-950">Segmentacao ativa</p>
+                        </div>
+                        <div className="space-y-2 text-sm text-slate-600">
+                          <p>Etapa: {campaign.filterStage ? stageLabels[campaign.filterStage] : "Todas"}</p>
+                          <p>Origem: {campaign.filterSourcePrimary ? sourcePrimaryLabels[campaign.filterSourcePrimary] : "Todas"}</p>
+                          <p>Temperatura: {campaign.filterTemperature ? temperatureLabels[campaign.filterTemperature] : "Todas"}</p>
+                          <p>Cidade: {campaign.filterCity || "Qualquer cidade"}</p>
+                          <p>Busca: {campaign.audienceSearch || "Sem termo adicional"}</p>
+                          <p>Opt-in exigido: {campaign.requiresOptIn ? "Sim" : "Nao"}</p>
+                        </div>
+                      </Card>
 
-                  <div className="space-y-4">
-                    <Card className="space-y-3 border-slate-200 bg-slate-50/70">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4 text-emerald-700" />
-                        <p className="font-medium text-slate-950">Segmentacao ativa</p>
-                      </div>
-                      <div className="space-y-2 text-sm text-slate-600">
-                        <p>Etapa: {campaign.filterStage ? stageLabels[campaign.filterStage] : "Todas"}</p>
-                        <p>Origem: {campaign.filterSourcePrimary ? sourcePrimaryLabels[campaign.filterSourcePrimary] : "Todas"}</p>
-                        <p>Temperatura: {campaign.filterTemperature ? temperatureLabels[campaign.filterTemperature] : "Todas"}</p>
-                        <p>Cidade: {campaign.filterCity || "Qualquer cidade"}</p>
-                        <p>Busca: {campaign.audienceSearch || "Sem termo adicional"}</p>
-                        <p>Opt-in exigido: {campaign.requiresOptIn ? "Sim" : "Nao"}</p>
-                      </div>
-                    </Card>
+                      <Card className="space-y-3 border-slate-200 bg-white">
+                        <p className="font-medium text-slate-950">Resumo operacional</p>
+                        <div className="space-y-2 text-sm text-slate-600">
+                          <p>Destinatarios na base: {campaign.recipientsCount}</p>
+                          <p>Receberam mensagem: {campaign.sentCount + campaign.deliveredCount + campaign.readCount}</p>
+                          <p>Nao receberam: {campaign.failedCount + campaign.skippedCount}</p>
+                          <p>Falharam no envio: {campaign.failedCount}</p>
+                          <p>Ignorados por regra: {campaign.skippedCount}</p>
+                        </div>
+                      </Card>
 
-                    <Card className="space-y-3 border-slate-200 bg-white">
-                      <p className="font-medium text-slate-950">Amostra de destinatarios</p>
-                      <div className="space-y-3">
-                        {campaign.recipients.length === 0 ? (
-                          <p className="text-sm text-slate-500">Nenhum destinatario encaixou nesses filtros ainda.</p>
-                        ) : (
-                          campaign.recipients.map((recipient) => (
-                            <div key={recipient.id} className="rounded-[20px] border border-slate-100 p-3">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="truncate font-medium text-slate-950">{recipient.lead.fullName}</p>
-                                  <p className="truncate text-xs text-slate-500">{recipient.lead.whatsapp || recipient.lead.phone}</p>
-                                </div>
-                                <Badge tone={getRecipientTone(recipient.status)}>{whatsappCampaignRecipientStatusLabels[recipient.status]}</Badge>
-                              </div>
-                              <p className="mt-2 line-clamp-2 text-xs text-slate-500">{recipient.personalizedBody || "Personalizacao sera aplicada no disparo."}</p>
-                              {recipient.failureReason ? <p className="mt-2 text-xs text-rose-600">{recipient.failureReason}</p> : null}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </Card>
+                      <CampaignForm
+                        templates={templates}
+                        owners={owners}
+                        initialValues={campaign}
+                        submitLabel="Salvar alteracoes"
+                        currentUserRole={currentUserRole}
+                        whatsappConfigured={whatsappConfigured}
+                      />
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         )}
       </section>

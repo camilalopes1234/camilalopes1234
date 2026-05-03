@@ -301,6 +301,10 @@ export async function refreshCampaignMetrics(campaignId: string) {
 }
 
 export async function dispatchCampaign(id: string, actor: Actor) {
+  return dispatchCampaignWithMode(id, actor, "all");
+}
+
+export async function dispatchCampaignWithMode(id: string, actor: Actor, mode: "all" | "failed" = "all") {
   if (!isWhatsappConfigured()) {
     throw new Error("Configure o WhatsApp oficial antes de disparar uma campanha.");
   }
@@ -328,7 +332,7 @@ export async function dispatchCampaign(id: string, actor: Actor) {
     where: {
       campaignId: campaign.id,
       status: {
-        in: [WhatsAppCampaignRecipientStatus.QUEUED, WhatsAppCampaignRecipientStatus.FAILED]
+        in: mode === "failed" ? [WhatsAppCampaignRecipientStatus.FAILED] : [WhatsAppCampaignRecipientStatus.QUEUED, WhatsAppCampaignRecipientStatus.FAILED]
       }
     },
     include: {
@@ -438,7 +442,8 @@ export async function dispatchCampaign(id: string, actor: Actor) {
     message: `Campanha ${campaign.title} disparada para ${processed} destinatarios.`,
     metadata: {
       processed,
-      finalStatus
+      finalStatus,
+      mode
     }
   });
 

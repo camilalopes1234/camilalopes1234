@@ -79,21 +79,28 @@ export async function getWhatsappCampaigns(actor: Actor) {
           createdById: demoUsers[0].id
         },
         createdBy: { name: demoUsers[0].name, role: demoUsers[0].role },
-        recipients: demoLeads.slice(0, 2).map((lead, index) => ({
+        recipients: demoLeads.slice(0, 4).map((lead, index) => ({
           id: `demo-recipient-${index + 1}`,
           campaignId: "demo-campaign-1",
           leadId: lead.id,
           conversationId: null,
           phone: lead.whatsapp || lead.phone,
           personalizedBody: `Oi ${lead.fullName.split(" ")[0]}, aqui e ${demoUsers[0].name}.`,
-          status: "QUEUED" as const,
+          status:
+            index === 0
+              ? ("READ" as const)
+              : index === 1
+                ? ("DELIVERED" as const)
+                : index === 2
+                  ? ("FAILED" as const)
+                  : ("SKIPPED" as const),
           providerMessageId: null,
-          failureReason: null,
+          failureReason: index === 2 ? "Numero sem WhatsApp ativo." : null,
           queuedAt: new Date(),
-          lastTriedAt: null,
-          sentAt: null,
-          deliveredAt: null,
-          readAt: null,
+          lastTriedAt: new Date(),
+          sentAt: index < 3 ? new Date() : null,
+          deliveredAt: index <= 1 ? new Date() : null,
+          readAt: index === 0 ? new Date() : null,
           createdAt: new Date(),
           updatedAt: new Date(),
           lead
@@ -116,8 +123,7 @@ export async function getWhatsappCampaigns(actor: Actor) {
         include: {
           lead: true
         },
-        orderBy: { createdAt: "asc" },
-        take: 8
+        orderBy: { createdAt: "asc" }
       }
     },
     orderBy: [{ createdAt: "desc" }]
