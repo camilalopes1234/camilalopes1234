@@ -1,7 +1,9 @@
 import { auth } from "@/auth";
+import { CampaignImporter } from "@/components/campaigns/campaign-importer";
 import { CampaignsManager } from "@/components/campaigns/campaigns-manager";
 import { getAssignableUsers } from "@/server/demo/users";
 import { getWhatsappCampaigns, getWhatsappTemplates } from "@/server/queries/campaigns";
+import { getLeadImportTemplate } from "@/server/services/import-service";
 import { isWhatsappConfigured } from "@/server/services/whatsapp-service";
 
 export default async function CampaignsPage() {
@@ -16,6 +18,7 @@ export default async function CampaignsPage() {
     getWhatsappTemplates({ id: session.user.id, role: session.user.role }),
     getAssignableUsers({ id: session.user.id, role: session.user.role })
   ]);
+  const importTemplate = getLeadImportTemplate();
 
   return (
     <div className="space-y-6">
@@ -33,6 +36,12 @@ export default async function CampaignsPage() {
         owners={owners}
         currentUserRole={session.user.role}
         whatsappConfigured={isWhatsappConfigured()}
+      />
+
+      <CampaignImporter
+        owners={owners}
+        importFields={importTemplate.expectedFields}
+        currentUserRole={session.user.role}
       />
     </div>
   );
