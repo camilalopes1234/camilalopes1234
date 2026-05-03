@@ -253,6 +253,69 @@ export function parseWhatsappWebhook(payload: MetaWebhookPayload) {
   return { inboundMessages, statusUpdates };
 }
 
-export async function sendWhatsappTemplate() {
-  throw new Error("Integracao de template ainda nao implementada.");
+export async function sendWhatsappTemplate(input: {
+  to: string;
+  templateName: string;
+  languageCode?: string | null;
+  bodyVariables?: string[];
+}) {
+  const config = getWhatsappConfig();
+  const normalized = normalizeWhatsappNumber(input.to);
+
+  if (!config.accessToken || !config.phoneNumberId || !normalized) {
+    return {
+      provider: "whatsapp-cloud-api",
+      configured: false,
+      status: MessageStatus.PENDING,
+      externalMessageId: null
+    };
+  }
+
+  const response = await fetch(`https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: normalized,
+      type: "template",
+      template: {
+        name: input.templateName,
+        language: {
+          code: input.languageCode || "pt_BR"
+        },
+        components:
+          input.bodyVariables && input.bodyVariables.length > 0
+            ? [
+                {
+                  type: "body",
+                  parameters: input.bodyVariables.map((value) => ({
+                    type: "text",
+                    text: value
+                  }))
+                }
+              ]
+            : undefined
+      }
+    })
+  });
+
+  const data = (await response.json()) as {
+    messages?: Array<{ id: string }>;
+    error?: { message?: string };
+  };
+
+  if (!response.ok) {
+    throw new Error(data.error?.message ?? "Falha ao enviar template para o WhatsApp.");
+  }
+
+  return {
+    provider: "whatsapp-cloud-api",
+    configured: true,
+    status: MessageStatus.SENT,
+    externalMessageId: data.messages?.[0]?.id ?? null
+  };
 }

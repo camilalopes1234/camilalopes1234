@@ -122,6 +122,8 @@ enum ActivityEntity {
   CONVERSATION
   MESSAGE
   USER
+  WHATSAPP_TEMPLATE
+  WHATSAPP_CAMPAIGN
 }
 
 enum ConversationChannel {
@@ -165,6 +167,36 @@ enum MessageType {
   DOCUMENT
 }
 
+enum WhatsAppTemplateCategory {
+  MARKETING
+  UTILITY
+  AUTHENTICATION
+  SERVICE
+}
+
+enum WhatsAppCampaignStatus {
+  DRAFT
+  READY
+  PROCESSING
+  COMPLETED
+  PAUSED
+  FAILED
+}
+
+enum WhatsAppCampaignSendMode {
+  TEXT
+  TEMPLATE
+}
+
+enum WhatsAppCampaignRecipientStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  SKIPPED
+}
+
 model User {
   id             String        @id @default(cuid())
   name           String
@@ -186,6 +218,8 @@ model User {
   evaluations    Evaluation[]  @relation("EvaluationOwner")
   conversations  Conversation[] @relation("ConversationOwner")
   messages       Message[]
+  whatsappTemplates WhatsAppTemplate[] @relation("WhatsAppTemplateAuthor")
+  whatsappCampaigns WhatsAppCampaign[] @relation("WhatsAppCampaignAuthor")
   activityLogs   ActivityLog[]
 }
 
@@ -226,6 +260,7 @@ model Lead {
   tasks               Task[]
   evaluations         Evaluation[]
   conversations       Conversation[]
+  whatsappCampaignRecipients WhatsAppCampaignRecipient[]
   activityLogs        ActivityLog[]
 
   @@index([ownerId])
@@ -331,6 +366,7 @@ model Conversation {
   lead                Lead                @relation(fields: [leadId], references: [id], onDelete: Cascade)
   owner               User?               @relation("ConversationOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   messages            Message[]
+  campaignRecipients  WhatsAppCampaignRecipient[]
   activityLogs        ActivityLog[]
 
   @@index([leadId, updatedAt])
@@ -386,6 +422,88 @@ model ActivityLog {
 
   @@index([userId, createdAt])
   @@index([leadId])
+}
+
+model WhatsAppTemplate {
+  id            String                   @id @default(cuid())
+  name          String                   @unique
+  displayName   String
+  category      WhatsAppTemplateCategory @default(MARKETING)
+  languageCode  String                   @default("pt_BR")
+  bodyText      String
+  variableKeys  Json?
+  isApproved    Boolean                  @default(false)
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  createdById   String?
+  createdBy     User?                    @relation("WhatsAppTemplateAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  campaigns     WhatsAppCampaign[]
+
+  @@index([createdById])
+}
+
+model WhatsAppCampaign {
+  id                  String                   @id @default(cuid())
+  title               String
+  description         String?
+  sendMode            WhatsAppCampaignSendMode @default(TEXT)
+  status              WhatsAppCampaignStatus   @default(DRAFT)
+  messageBody         String
+  audienceSearch      String?
+  filterStage         LeadStage?
+  filterSourcePrimary LeadSourcePrimary?
+  filterTemperature   LeadTemperature?
+  filterOwnerId       String?
+  filterCity          String?
+  requiresOptIn       Boolean                  @default(false)
+  recipientsCount     Int                      @default(0)
+  sentCount           Int                      @default(0)
+  deliveredCount      Int                      @default(0)
+  readCount           Int                      @default(0)
+  failedCount         Int                      @default(0)
+  skippedCount        Int                      @default(0)
+  scheduledAt         DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  lastDispatchAt      DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  createdById         String
+  templateId          String?
+  createdBy           User                     @relation("WhatsAppCampaignAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+  template            WhatsAppTemplate?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  recipients          WhatsAppCampaignRecipient[]
+
+  @@index([createdById, status])
+  @@index([filterOwnerId])
+  @@index([templateId])
+}
+
+model WhatsAppCampaignRecipient {
+  id                String                         @id @default(cuid())
+  campaignId        String
+  leadId            String
+  conversationId    String?
+  phone             String
+  personalizedBody  String?
+  status            WhatsAppCampaignRecipientStatus @default(QUEUED)
+  providerMessageId String?
+  failureReason     String?
+  queuedAt          DateTime                       @default(now())
+  lastTriedAt       DateTime?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  createdAt         DateTime                       @default(now())
+  updatedAt         DateTime                       @updatedAt
+  campaign          WhatsAppCampaign               @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead              Lead                           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  conversation      Conversation?                  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, leadId])
+  @@index([campaignId, status])
+  @@index([leadId])
+  @@index([providerMessageId])
 }
 
 model Account {

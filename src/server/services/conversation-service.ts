@@ -4,7 +4,7 @@ import { prisma } from "@/server/db/prisma";
 import { demoConversations } from "@/server/demo/data";
 import { isDemoMode } from "@/server/demo/mode";
 import { createActivityLog } from "@/server/services/activity-log-service";
-import { normalizeWhatsappNumber, sendWhatsappMessage } from "@/server/services/whatsapp-service";
+import { normalizeWhatsappNumber, sendWhatsappMessage, sendWhatsappTemplate } from "@/server/services/whatsapp-service";
 
 type Actor = {
   id: string;
@@ -133,6 +133,85 @@ export async function createOutboundMessage(input: {
       direction: MessageDirection.OUTBOUND,
       status: sendResult.status,
       externalMessageId: sendResult.externalMessageId
+    }
+  });
+
+  await prisma.conversation.update({
+    where: { id: input.conversationId },
+    data: {
+      lastMessageAt: message.createdAt,
+      status: ConversationStatus.OPEN
+    }
+  });
+
+  return message;
+}
+
+export async function createOutboundTemplateMessage(input: {
+  conversationId: string;
+  body: string;
+  templateName: string;
+  languageCode?: string | null;
+  bodyVariables?: string[];
+  userId: string;
+}) {
+  if (isDemoMode) {
+    return {
+      id: `demo-template-msg-${Date.now()}`,
+      conversationId: input.conversationId,
+      body: input.body,
+      type: MessageType.TEXT,
+      mediaUrl: null,
+      mimeType: null,
+      fileName: null,
+      caption: null,
+      durationSeconds: null,
+      userId: input.userId,
+      senderType: SenderType.USER,
+      direction: MessageDirection.OUTBOUND,
+      status: MessageStatus.SENT,
+      externalMessageId: null,
+      metadata: {
+        templateName: input.templateName,
+        languageCode: input.languageCode ?? "pt_BR",
+        bodyVariables: input.bodyVariables ?? []
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: input.conversationId },
+    include: { lead: true }
+  });
+
+  if (!conversation) {
+    throw new Error("Conversa nao encontrada.");
+  }
+
+  const sendResult = await sendWhatsappTemplate({
+    to: conversation.contactPhone || conversation.lead.whatsapp || conversation.lead.phone,
+    templateName: input.templateName,
+    languageCode: input.languageCode,
+    bodyVariables: input.bodyVariables
+  });
+
+  const message = await prisma.message.create({
+    data: {
+      conversationId: input.conversationId,
+      body: input.body,
+      type: MessageType.TEXT,
+      userId: input.userId,
+      senderType: SenderType.USER,
+      direction: MessageDirection.OUTBOUND,
+      status: sendResult.status,
+      externalMessageId: sendResult.externalMessageId,
+      metadata: {
+        templateName: input.templateName,
+        languageCode: input.languageCode ?? "pt_BR",
+        bodyVariables: input.bodyVariables ?? []
+      }
     }
   });
 

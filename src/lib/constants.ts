@@ -6,6 +6,10 @@ import {
   MessageDirection,
   MessageStatus,
   MessageType,
+  WhatsAppCampaignRecipientStatus,
+  WhatsAppCampaignSendMode,
+  WhatsAppCampaignStatus,
+  WhatsAppTemplateCategory,
   LeadSourcePrimary,
   LeadStage,
   LeadStatus,
@@ -149,4 +153,34 @@ export const messageTypeLabels: Record<MessageType, string> = {
 export const roleLabels: Record<UserRole, string> = {
   ADMIN: "Admin",
   SELLER: "Vendedor"
+};
+
+export const whatsappTemplateCategoryLabels: Record<WhatsAppTemplateCategory, string> = {
+  MARKETING: "Marketing",
+  UTILITY: "Utilidade",
+  AUTHENTICATION: "Autenticacao",
+  SERVICE: "Servico"
+};
+
+export const whatsappCampaignStatusLabels: Record<WhatsAppCampaignStatus, string> = {
+  DRAFT: "Rascunho",
+  READY: "Pronta",
+  PROCESSING: "Enviando",
+  COMPLETED: "Concluida",
+  PAUSED: "Pausada",
+  FAILED: "Falhou"
+};
+
+export const whatsappCampaignSendModeLabels: Record<WhatsAppCampaignSendMode, string> = {
+  TEXT: "Texto livre",
+  TEMPLATE: "Template oficial"
+};
+
+export const whatsappCampaignRecipientStatusLabels: Record<WhatsAppCampaignRecipientStatus, string> = {
+  QUEUED: "Na fila",
+  SENT: "Enviada",
+  DELIVERED: "Entregue",
+  READ: "Lida",
+  FAILED: "Falhou",
+  SKIPPED: "Ignorada"
 };

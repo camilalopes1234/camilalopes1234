@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { demoLeads } from "@/server/demo/data";
 import { isDemoMode } from "@/server/demo/mode";
 import { prisma } from "@/server/db/prisma";
+import { syncCampaignDeliveryStatusByProviderMessage } from "@/server/queries/campaigns";
+import { refreshCampaignMetrics } from "@/server/services/campaign-service";
 import { handleIncomingWhatsappMessage, updateMessageStatusByExternalId } from "@/server/services/conversation-service";
 import { getWhatsappConfig, normalizeWhatsappNumber, parseWhatsappWebhook } from "@/server/services/whatsapp-service";
 
@@ -29,6 +31,21 @@ export async function POST(request: Request) {
         externalMessageId: statusUpdate.externalMessageId,
         status: statusUpdate.status
       });
+
+      if (statusUpdate.externalMessageId) {
+        const recipients = isDemoMode
+          ? []
+          : await prisma.whatsAppCampaignRecipient.findMany({
+              where: { providerMessageId: statusUpdate.externalMessageId },
+              select: { campaignId: true }
+            });
+
+        await syncCampaignDeliveryStatusByProviderMessage(statusUpdate.externalMessageId, statusUpdate.status);
+
+        for (const recipient of recipients) {
+          await refreshCampaignMetrics(recipient.campaignId);
+        }
+      }
     }
 
     for (const message of inboundMessages) {

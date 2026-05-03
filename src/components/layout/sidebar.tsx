@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, BriefcaseBusiness, CalendarRange, ClipboardCheck, KanbanSquare, MessageSquareMore, Settings, Users } from "lucide-react";
+import { BarChart3, BriefcaseBusiness, CalendarRange, ClipboardCheck, KanbanSquare, Megaphone, MessageSquareMore, Settings, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ const items = [
   { href: "/agenda", label: "Agenda Comercial", icon: CalendarRange },
   { href: "/evaluations", label: "Avaliacoes", icon: ClipboardCheck },
   { href: "/conversations", label: "Chatbot", icon: MessageSquareMore },
+  { href: "/campaigns", label: "Campanhas WA", icon: Megaphone },
   { href: "/opportunities", label: "Propostas", icon: BriefcaseBusiness },
   { href: "/users", label: "Usuarios", icon: Users, adminOnly: true },
   { href: "/settings", label: "Configuracoes", icon: Settings }
