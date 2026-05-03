@@ -1,7 +1,7 @@
 "use client";
 
 import { type Evaluation, LeadStage, type Interaction, type Lead, type Opportunity, type Task, type User } from "@prisma/client";
-import { CalendarClock, Copy, MessageCircle, Pencil, Phone, TrendingUp } from "lucide-react";
+import { Copy, MessageCircle, Pencil, Phone, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -32,6 +32,23 @@ type LeadDetailProps = {
   };
   users: Pick<User, "id" | "name">[];
 };
+
+function DetailPanel({
+  title,
+  emptyText,
+  children
+}: {
+  title: string;
+  emptyText?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="border-white/80">
+      <h3 className="text-base font-semibold text-slate-950">{title}</h3>
+      <div className="mt-3 space-y-2.5">{children || <p className="text-sm text-slate-500">{emptyText}</p>}</div>
+    </Card>
+  );
+}
 
 export function LeadDetail({ lead, users }: LeadDetailProps) {
   const router = useRouter();
@@ -78,11 +95,11 @@ export function LeadDetail({ lead, users }: LeadDetailProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="border-white/80 bg-[linear-gradient(135deg,rgba(15,118,110,0.08),rgba(29,78,216,0.05),rgba(255,255,255,0.98))]">
-        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-5">
+      <Card className="border-white/80 bg-[linear-gradient(135deg,rgba(15,118,110,0.07),rgba(29,78,216,0.04),rgba(255,255,255,0.98))]">
+        <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Badge tone="info">{stageLabels[lead.stage]}</Badge>
               <Badge tone={lead.temperature === "HOT" ? "success" : lead.temperature === "WARM" ? "warning" : "default"}>
                 {temperatureLabels[lead.temperature]}
@@ -90,31 +107,31 @@ export function LeadDetail({ lead, users }: LeadDetailProps) {
               <Badge tone="default">{lead.source}</Badge>
             </div>
 
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{lead.fullName}</h1>
-              <p className="max-w-2xl text-sm leading-6 text-slate-600">{lead.notes || "Lead em acompanhamento comercial consultivo."}</p>
+            <div className="space-y-1.5">
+              <h1 className="text-[30px] font-semibold tracking-tight text-slate-950">{lead.fullName}</h1>
+              <p className="max-w-2xl text-[13px] leading-5 text-slate-600">{lead.notes || "Lead em acompanhamento comercial consultivo."}</p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-3xl bg-white/85 p-4 ring-1 ring-white/80">
-                <p className="text-xs text-slate-500">Potencial</p>
-                <p className="mt-2 text-xl font-semibold text-slate-950">{formatCurrency(lead.potentialValue?.toString())}</p>
+            <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-[22px] bg-white/85 p-3.5 ring-1 ring-white/80">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Potencial</p>
+                <p className="mt-1.5 text-lg font-semibold text-slate-950">{formatCurrency(lead.potentialValue?.toString())}</p>
               </div>
-              <div className="rounded-3xl bg-white/85 p-4 ring-1 ring-white/80">
-                <p className="text-xs text-slate-500">Próxima ação</p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">{formatDateTime(lead.nextActionAt)}</p>
+              <div className="rounded-[22px] bg-white/85 p-3.5 ring-1 ring-white/80">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Proxima acao</p>
+                <p className="mt-1.5 text-[13px] font-semibold text-slate-950">{formatDateTime(lead.nextActionAt)}</p>
               </div>
-              <div className="rounded-3xl bg-white/85 p-4 ring-1 ring-white/80">
-                <p className="text-xs text-slate-500">Última interação</p>
-                <p className="mt-2 text-sm font-semibold text-slate-950">{formatDateTime(lead.lastInteractionAt)}</p>
+              <div className="rounded-[22px] bg-white/85 p-3.5 ring-1 ring-white/80">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Ultima interacao</p>
+                <p className="mt-1.5 text-[13px] font-semibold text-slate-950">{formatDateTime(lead.lastInteractionAt)}</p>
               </div>
-              <div className="rounded-3xl bg-slate-950 p-4 text-white">
-                <p className="text-xs text-slate-400">Responsável</p>
-                <p className="mt-2 text-sm font-semibold">{lead.owner.name}</p>
+              <div className="rounded-[22px] bg-slate-950 p-3.5 text-white">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Responsavel</p>
+                <p className="mt-1.5 text-[13px] font-semibold">{lead.owner.name}</p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               <Button onClick={() => updateStage(LeadStage.CLOSED)} disabled={isPending}>
                 <TrendingUp className="mr-2 h-4 w-4" />
                 Marcar como fechado
@@ -153,10 +170,10 @@ export function LeadDetail({ lead, users }: LeadDetailProps) {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+          <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-1">
             <Card className="border-white/80 bg-white/90">
               <h3 className="text-sm font-semibold text-slate-950">Contato</h3>
-              <div className="mt-3 space-y-2 text-sm text-slate-600">
+              <div className="mt-2.5 space-y-1.5 text-[13px] text-slate-600">
                 <p>{lead.phone}</p>
                 <p>{lead.email || "-"}</p>
                 <p>{lead.instagram || "-"}</p>
@@ -164,9 +181,9 @@ export function LeadDetail({ lead, users }: LeadDetailProps) {
             </Card>
             <Card className="border-white/80 bg-white/90">
               <h3 className="text-sm font-semibold text-slate-950">Contexto</h3>
-              <div className="mt-3 space-y-2 text-sm text-slate-600">
+              <div className="mt-2.5 space-y-1.5 text-[13px] text-slate-600">
                 <p>{lead.company || "Sem empresa"}</p>
-                <p>{[lead.city, lead.state].filter(Boolean).join(" / ") || "Sem localização"}</p>
+                <p>{[lead.city, lead.state].filter(Boolean).join(" / ") || "Sem localizacao"}</p>
                 <p>{lead.mainInterest || "Sem interesse principal definido"}</p>
               </div>
             </Card>
@@ -174,20 +191,20 @@ export function LeadDetail({ lead, users }: LeadDetailProps) {
         </div>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div className="space-y-6">
+      <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+        <div className="space-y-5">
           <Card className="border-white/80">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-slate-950">Timeline de interações</h3>
-                <p className="text-sm text-slate-500">Histórico comercial mais recente do lead.</p>
+                <h3 className="text-base font-semibold text-slate-950">Timeline de interacoes</h3>
+                <p className="text-[13px] text-slate-500">Historico comercial mais recente do lead.</p>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{lead.interactions.length}</span>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{lead.interactions.length}</span>
             </div>
-            <div className="mt-5 space-y-4">
-              {lead.interactions.length === 0 ? <p className="text-sm text-slate-500">Nenhuma interação registrada.</p> : null}
+            <div className="mt-4 space-y-3">
+              {lead.interactions.length === 0 ? <p className="text-sm text-slate-500">Nenhuma interacao registrada.</p> : null}
               {lead.interactions.map((interaction) => (
-                <div key={interaction.id} className="rounded-2xl border border-slate-100 bg-white p-4">
+                <div key={interaction.id} className="rounded-[20px] border border-slate-100 bg-white p-3.5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="font-medium text-slate-900">{interactionTypeLabels[interaction.type]}</p>
@@ -195,7 +212,7 @@ export function LeadDetail({ lead, users }: LeadDetailProps) {
                     </div>
                     <span className="text-xs text-slate-500">{formatDateTime(interaction.occurredAt)}</span>
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{interaction.content}</p>
+                  <p className="mt-2.5 text-[13px] leading-5 text-slate-600">{interaction.content}</p>
                 </div>
               ))}
             </div>
@@ -204,10 +221,10 @@ export function LeadDetail({ lead, users }: LeadDetailProps) {
           <InteractionForm leadId={lead.id} />
           <EvaluationForm leadId={lead.id} ownerId={lead.ownerId} />
 
-          <div id="editar-lead">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-slate-950">Editar lead</h3>
-              <p className="text-sm text-slate-500">Atualize dados cadastrais, responsável e próximos passos.</p>
+          <div id="editar-lead" className="space-y-3">
+            <div>
+              <h3 className="text-base font-semibold text-slate-950">Editar lead</h3>
+              <p className="text-[13px] text-slate-500">Atualize dados cadastrais, responsavel e proximos passos.</p>
             </div>
             <LeadForm
               users={users}
@@ -217,63 +234,48 @@ export function LeadDetail({ lead, users }: LeadDetailProps) {
                 closedValue: lead.closedValue?.toString(),
                 nextActionAt: lead.nextActionAt?.toISOString() ?? null
               }}
-              submitLabel="Salvar alterações"
+              submitLabel="Salvar alteracoes"
             />
           </div>
         </div>
 
-        <div className="space-y-6">
-          <Card className="border-white/80">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-950">Tarefas e follow-ups</h3>
-              <CalendarClock className="h-5 w-5 text-slate-400" />
-            </div>
-            <div className="mt-4 space-y-3">
-              {lead.tasks.length === 0 ? <p className="text-sm text-slate-500">Nenhuma tarefa vinculada.</p> : null}
-              {lead.tasks.map((task) => (
-                <div key={task.id} className="rounded-2xl border border-slate-100 bg-white p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-slate-900">{task.title}</p>
-                    <Badge tone={task.status === "PENDING" ? "warning" : "success"}>{taskStatusLabels[task.status]}</Badge>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">{formatDateTime(task.dueDate)}</p>
+        <div className="space-y-5">
+          <DetailPanel title="Tarefas e follow-ups" emptyText="Nenhuma tarefa vinculada.">
+            {lead.tasks.map((task) => (
+              <div key={task.id} className="rounded-[20px] border border-slate-100 bg-white p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium text-slate-900">{task.title}</p>
+                  <Badge tone={task.status === "PENDING" ? "warning" : "success"}>{taskStatusLabels[task.status]}</Badge>
                 </div>
-              ))}
-            </div>
-          </Card>
+                <p className="mt-1.5 text-[13px] text-slate-500">{formatDateTime(task.dueDate)}</p>
+              </div>
+            ))}
+          </DetailPanel>
 
-          <Card className="border-white/80">
-            <h3 className="text-lg font-semibold text-slate-950">Avaliações</h3>
-            <div className="mt-4 space-y-3">
-              {lead.evaluations.length === 0 ? <p className="text-sm text-slate-500">Nenhuma avaliação registrada.</p> : null}
-              {lead.evaluations.map((evaluation) => (
-                <div key={evaluation.id} className="rounded-2xl border border-slate-100 bg-white p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-slate-900">{evaluation.owner.name}</p>
-                    <Badge tone="info">{evaluationStatusLabels[evaluation.status]}</Badge>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">{formatDateTime(evaluation.scheduledAt)}</p>
-                  <p className="mt-1 text-sm text-slate-500">{evaluation.preNotes || evaluation.postNotes || "Sem observações."}</p>
+          <DetailPanel title="Avaliacoes" emptyText="Nenhuma avaliacao registrada.">
+            {lead.evaluations.map((evaluation) => (
+              <div key={evaluation.id} className="rounded-[20px] border border-slate-100 bg-white p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium text-slate-900">{evaluation.owner.name}</p>
+                  <Badge tone="info">{evaluationStatusLabels[evaluation.status]}</Badge>
                 </div>
-              ))}
-            </div>
-          </Card>
+                <p className="mt-1.5 text-[13px] text-slate-500">{formatDateTime(evaluation.scheduledAt)}</p>
+                <p className="mt-1 text-[13px] text-slate-500">{evaluation.preNotes || evaluation.postNotes || "Sem observacoes."}</p>
+              </div>
+            ))}
+          </DetailPanel>
 
-          <Card className="border-white/80">
-            <h3 className="text-lg font-semibold text-slate-950">Propostas registradas</h3>
-            <div className="mt-4 space-y-3">
-              {lead.opportunities.length === 0 ? <p className="text-sm text-slate-500">Nenhuma proposta registrada.</p> : null}
-              {lead.opportunities.map((opportunity) => (
-                <div key={opportunity.id} className="rounded-2xl border border-slate-100 bg-white p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-slate-900">{opportunity.title}</p>
-                    <Badge tone="info">{opportunityStatusLabels[opportunity.status]}</Badge>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">{formatCurrency(opportunity.estimatedValue?.toString())}</p>
+          <DetailPanel title="Propostas registradas" emptyText="Nenhuma proposta registrada.">
+            {lead.opportunities.map((opportunity) => (
+              <div key={opportunity.id} className="rounded-[20px] border border-slate-100 bg-white p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium text-slate-900">{opportunity.title}</p>
+                  <Badge tone="info">{opportunityStatusLabels[opportunity.status]}</Badge>
                 </div>
-              ))}
-            </div>
-          </Card>
+                <p className="mt-1.5 text-[13px] text-slate-500">{formatCurrency(opportunity.estimatedValue?.toString())}</p>
+              </div>
+            ))}
+          </DetailPanel>
         </div>
       </div>
     </div>

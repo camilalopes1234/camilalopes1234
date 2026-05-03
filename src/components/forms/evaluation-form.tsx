@@ -16,14 +16,14 @@ export function EvaluationForm({ leadId, ownerId }: { leadId: string; ownerId: s
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <Card className="border-white/80 bg-white/90">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-950">Agendar avaliação</h3>
-        <p className="text-sm text-slate-500">Crie o compromisso comercial e deixe a jornada registrada no CRM.</p>
+    <Card className="space-y-4 border-white/80 bg-white/90">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-base font-semibold text-slate-950">Agendar avaliacao</h3>
+        <p className="text-[13px] text-slate-500">Crie o compromisso sem ocupar a tela toda.</p>
       </div>
 
       <form
-        className="grid gap-4"
+        className="grid gap-3 md:grid-cols-[0.95fr_1.05fr]"
         onSubmit={(event) => {
           event.preventDefault();
           setError(null);
@@ -40,12 +40,12 @@ export function EvaluationForm({ leadId, ownerId }: { leadId: string; ownerId: s
             const data = await response.json();
 
             if (!response.ok) {
-              setError(data.error ?? "Não foi possível agendar a avaliação.");
-              toast.error(data.error ?? "Não foi possível agendar a avaliação.");
+              setError(data.error ?? "Nao foi possivel agendar a avaliacao.");
+              toast.error(data.error ?? "Nao foi possivel agendar a avaliacao.");
               return;
             }
 
-            toast.success("Avaliação agendada.");
+            toast.success("Avaliacao agendada.");
             form.reset();
             router.refresh();
           });
@@ -58,15 +58,15 @@ export function EvaluationForm({ leadId, ownerId }: { leadId: string; ownerId: s
           <Input name="scheduledAt" type="datetime-local" required />
         </Field>
 
-        <Field label="Observações pré-avaliação" hint="Inclua contexto da conversa, objeções ou expectativas para o encontro.">
-          <Textarea name="preNotes" placeholder="Ex.: cliente quer avaliar prazo, investimento e modelo comercial ideal." />
+        <Field label="Observacoes pre-avaliacao" hint="Contexto rapido para o encontro.">
+          <Textarea name="preNotes" className="min-h-16" placeholder="Ex.: cliente quer avaliar prazo, investimento e modelo ideal." />
         </Field>
 
-        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="md:col-span-2 text-sm text-rose-600">{error}</p> : null}
 
-        <div className="flex justify-end">
+        <div className="md:col-span-2 flex justify-end">
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Agendando..." : "Agendar avaliação"}
+            {isPending ? "Agendando..." : "Agendar avaliacao"}
           </Button>
         </div>
       </form>

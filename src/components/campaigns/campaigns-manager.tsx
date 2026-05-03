@@ -196,7 +196,7 @@ function CampaignForm({
         </div>
       ) : null}
 
-      <Card className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <Card className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-emerald-700" />
@@ -204,20 +204,20 @@ function CampaignForm({
           </div>
           <div className="space-y-2">
             {preflightChecks.map((item) => (
-              <div key={item.label} className="flex items-center gap-3 rounded-2xl bg-slate-50/80 px-3 py-2">
+              <div key={item.label} className="flex items-center gap-2.5 rounded-xl bg-slate-50/80 px-3 py-2">
                 {item.ok ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-amber-600" />}
-                <span className="text-sm text-slate-700">{item.label}</span>
+                <span className="text-[13px] text-slate-700">{item.label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+        <div className="space-y-3 rounded-[22px] border border-slate-200 bg-slate-50/80 p-3.5">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-sky-700" />
             <p className="font-medium text-slate-950">Preview da mensagem</p>
           </div>
-          <p className="rounded-[20px] bg-white px-4 py-3 text-sm leading-6 text-slate-700 shadow-sm">
+          <p className="rounded-[18px] bg-white px-3.5 py-3 text-[13px] leading-5 text-slate-700 shadow-sm">
             {messageBody.trim() ? samplePersonalization(messageBody) : "Sua mensagem personalizada aparecera aqui assim que voce comecar a escrever."}
           </p>
           <p className="text-xs text-slate-500">
@@ -227,7 +227,7 @@ function CampaignForm({
       </Card>
 
       <form
-        className="grid gap-4 md:grid-cols-2"
+        className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"
         onSubmit={(event) => {
           event.preventDefault();
           setError(null);
@@ -277,9 +277,14 @@ function CampaignForm({
             ))}
           </Select>
         </Field>
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 xl:col-span-3">
           <Field label="Descricao interna">
-            <Textarea name="description" defaultValue={initialValues?.description ?? ""} placeholder="Objetivo, audiencia e observacoes da operacao." />
+            <Textarea
+              name="description"
+              defaultValue={initialValues?.description ?? ""}
+              className="min-h-16"
+              placeholder="Objetivo, audiencia e observacoes da operacao."
+            />
           </Field>
         </div>
         <Field label="Template oficial">
@@ -309,7 +314,7 @@ function CampaignForm({
         </Field>
 
         {selectedTemplate ? (
-          <div className="md:col-span-2 rounded-[24px] border border-sky-200 bg-sky-50/70 p-4">
+          <div className="md:col-span-2 xl:col-span-3 rounded-[22px] border border-sky-200 bg-sky-50/70 p-3.5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -326,12 +331,13 @@ function CampaignForm({
           </div>
         ) : null}
 
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 xl:col-span-3">
           <Field label="Mensagem base">
             <Textarea
               name="messageBody"
               value={messageBody}
               onChange={(event) => setMessageBody(event.target.value)}
+              className="min-h-20"
               required
               placeholder="Ex.: Oi {{primeiro_nome}}, aqui e {{responsavel}}. Quero te mostrar uma condicao especial para {{interesse}}."
             />
@@ -388,17 +394,17 @@ function CampaignForm({
           </Select>
         </Field>
 
-        <div className="md:col-span-2 flex flex-wrap gap-2">
+        <div className="md:col-span-2 xl:col-span-3 flex flex-wrap gap-1.5">
           {placeholderTokens.map((token) => (
-            <span key={token} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+            <span key={token} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600">
               {token}
             </span>
           ))}
         </div>
 
-        {error ? <p className="md:col-span-2 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="md:col-span-2 xl:col-span-3 text-sm text-rose-600">{error}</p> : null}
 
-        <div className="md:col-span-2 flex justify-end">
+        <div className="md:col-span-2 xl:col-span-3 flex justify-end">
           <Button type="submit" disabled={isPending}>
             {isPending ? "Salvando..." : submitLabel}
           </Button>
@@ -414,14 +420,14 @@ function TemplateForm({ templates }: { templates: TemplateOption[] }) {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <Card className="space-y-5">
+    <Card className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-slate-950">Templates aprovados e internos</h3>
-        <p className="text-sm text-slate-500">Cadastre modelos para a equipe e marque como aprovados quando ja existirem na Meta.</p>
+        <h3 className="text-base font-semibold text-slate-950">Templates aprovados e internos</h3>
+        <p className="text-[13px] text-slate-500">Cadastre modelos para a equipe e marque como aprovados quando ja existirem na Meta.</p>
       </div>
 
       <form
-        className="grid gap-4 md:grid-cols-2"
+        className="grid gap-3 md:grid-cols-2"
         onSubmit={(event) => {
           event.preventDefault();
           setError(null);
@@ -468,7 +474,7 @@ function TemplateForm({ templates }: { templates: TemplateOption[] }) {
         </Field>
         <div className="md:col-span-2">
           <Field label="Corpo base">
-            <Textarea name="bodyText" placeholder="Oi {{primeiro_nome}}, aqui e {{responsavel}}..." required />
+            <Textarea name="bodyText" className="min-h-16" placeholder="Oi {{primeiro_nome}}, aqui e {{responsavel}}..." required />
           </Field>
         </div>
         <div className="md:col-span-2">
@@ -494,7 +500,7 @@ function TemplateForm({ templates }: { templates: TemplateOption[] }) {
 
       <div className="grid gap-3">
         {templates.map((template) => (
-          <div key={template.id} className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-4">
+          <div key={template.id} className="rounded-[20px] border border-slate-200 bg-slate-50/70 p-3.5">
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-medium text-slate-950">{template.displayName}</p>
               <Badge tone={template.isApproved ? "success" : "warning"}>{template.isApproved ? "Aprovado" : "Interno"}</Badge>
@@ -532,7 +538,7 @@ export function CampaignsManager({
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr]">
+      <section className="grid gap-4 xl:grid-cols-[1.4fr_0.88fr]">
         <Card className="space-y-5">
           <div className="flex items-start gap-4">
             <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-700">
@@ -556,26 +562,26 @@ export function CampaignsManager({
         </Card>
 
         <div className="space-y-4">
-          <Card className="grid gap-4">
-            <div className="rounded-[24px] border border-emerald-100 bg-emerald-50/80 p-4">
+          <Card className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[20px] border border-emerald-100 bg-emerald-50/80 p-3.5">
               <p className="text-sm text-emerald-700">Campanhas cadastradas</p>
-              <p className="mt-2 text-3xl font-semibold text-emerald-950">{campaigns.length}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-emerald-950">{campaigns.length}</p>
             </div>
-            <div className="rounded-[24px] border border-sky-100 bg-sky-50/80 p-4">
+            <div className="rounded-[20px] border border-sky-100 bg-sky-50/80 p-3.5">
               <p className="text-sm text-sky-700">Templates disponiveis</p>
-              <p className="mt-2 text-3xl font-semibold text-sky-950">{templates.length}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-sky-950">{templates.length}</p>
             </div>
-            <div className="rounded-[24px] border border-amber-100 bg-amber-50/80 p-4">
+            <div className="rounded-[20px] border border-amber-100 bg-amber-50/80 p-3.5">
               <p className="text-sm text-amber-700">Prontas para disparo</p>
-              <p className="mt-2 text-3xl font-semibold text-amber-950">{campaigns.filter((campaign) => campaign.status === WhatsAppCampaignStatus.READY).length}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-amber-950">{campaigns.filter((campaign) => campaign.status === WhatsAppCampaignStatus.READY).length}</p>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+            <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 p-3.5">
               <p className="text-sm text-slate-600">Alcance total previsto</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-950">{totalRecipients}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-slate-950">{totalRecipients}</p>
             </div>
-            <div className="rounded-[24px] border border-teal-100 bg-teal-50/80 p-4">
+            <div className="rounded-[20px] border border-teal-100 bg-teal-50/80 p-3.5 sm:col-span-2">
               <p className="text-sm text-teal-700">Entregas/Lidas</p>
-              <p className="mt-2 text-3xl font-semibold text-teal-950">{totalDelivered}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-teal-950">{totalDelivered}</p>
             </div>
           </Card>
 

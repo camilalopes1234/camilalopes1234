@@ -72,14 +72,14 @@ export function LeadForm({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <Card>
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-slate-950">Cadastro do lead</h3>
-        <p className="text-sm text-slate-500">Dados de contato, contexto comercial e próximos passos em um único fluxo.</p>
+    <Card className="space-y-4">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-base font-semibold text-slate-950">Cadastro do lead</h3>
+        <p className="text-[13px] text-slate-500">Contato, qualificacao e follow-up em um fluxo mais compacto.</p>
       </div>
 
       <form
-        className="grid gap-4 md:grid-cols-2"
+        className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
         onSubmit={(event) => {
           event.preventDefault();
           setError(null);
@@ -96,8 +96,8 @@ export function LeadForm({
 
             const data = await response.json();
             if (!response.ok) {
-              setError(data.error ?? "Não foi possível salvar o lead.");
-              toast.error(data.error ?? "Não foi possível salvar o lead.");
+              setError(data.error ?? "Nao foi possivel salvar o lead.");
+              toast.error(data.error ?? "Nao foi possivel salvar o lead.");
               return;
             }
 
@@ -144,9 +144,9 @@ export function LeadForm({
           <Input name="sourceDetail" defaultValue={initialValues?.sourceDetail ?? ""} placeholder="Campanha, closer, parceiro..." />
         </Field>
         <Field label="Origem livre">
-          <Input name="source" defaultValue={initialValues?.source} required placeholder="Instagram, indicação, tráfego..." />
+          <Input name="source" defaultValue={initialValues?.source} required placeholder="Instagram, indicacao, trafego..." />
         </Field>
-        <Field label="Serviço de interesse">
+        <Field label="Servico de interesse">
           <Input name="mainInterest" defaultValue={initialValues?.mainInterest ?? ""} />
         </Field>
         <Field label="Faixa de investimento">
@@ -158,7 +158,7 @@ export function LeadForm({
             ))}
           </Select>
         </Field>
-        <Field label="Urgência">
+        <Field label="Urgencia">
           <Select name="urgency" defaultValue={initialValues?.urgency ?? LeadUrgency.MEDIUM}>
             {Object.entries(urgencyLabels).map(([value, label]) => (
               <option key={value} value={value}>
@@ -194,7 +194,7 @@ export function LeadForm({
             ))}
           </Select>
         </Field>
-        <Field label="Responsável">
+        <Field label="Responsavel">
           <Select name="ownerId" defaultValue={initialValues?.ownerId} required>
             <option value="">Selecione</option>
             {users.map((user) => (
@@ -216,44 +216,45 @@ export function LeadForm({
         <Field label="Valor fechado (R$)">
           <Input name="closedValue" type="number" step="0.01" defaultValue={initialValues?.closedValue?.toString() ?? ""} />
         </Field>
-        <Field label="Próxima ação">
+        <Field label="Proxima acao">
           <Input
             name="nextActionAt"
             type="datetime-local"
             defaultValue={initialValues?.nextActionAt ? initialValues.nextActionAt.slice(0, 16) : ""}
           />
         </Field>
-        <Field label="Compareceu à avaliação?">
+        <Field label="Compareceu a avaliacao?">
           <Select name="attendedEvaluation" defaultValue={String(initialValues?.attendedEvaluation ?? false)}>
-            <option value="false">Não</option>
+            <option value="false">Nao</option>
             <option value="true">Sim</option>
           </Select>
         </Field>
-        <Field label="Fechou na avaliação?">
+        <Field label="Fechou na avaliacao?">
           <Select name="closedAtEvaluation" defaultValue={String(initialValues?.closedAtEvaluation ?? false)}>
-            <option value="false">Não</option>
+            <option value="false">Nao</option>
             <option value="true">Sim</option>
           </Select>
         </Field>
-        <div className="md:col-span-2">
+
+        <div className="md:col-span-2 xl:col-span-2">
           <Field label="Template de mensagem futura">
-            <Textarea name="whatsappTemplate" defaultValue={initialValues?.whatsappTemplate ?? ""} />
+            <Textarea name="whatsappTemplate" defaultValue={initialValues?.whatsappTemplate ?? ""} className="min-h-16" />
           </Field>
         </div>
-        <div className="md:col-span-2">
-          <Field label="Observações">
-            <Textarea name="notes" defaultValue={initialValues?.notes ?? ""} />
+        <div className="md:col-span-2 xl:col-span-2">
+          <Field label="Observacoes">
+            <Textarea name="notes" defaultValue={initialValues?.notes ?? ""} className="min-h-16" />
           </Field>
         </div>
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 xl:col-span-4">
           <Field label="Motivo de perda">
-            <Textarea name="lossReason" defaultValue={initialValues?.lossReason ?? ""} />
+            <Textarea name="lossReason" defaultValue={initialValues?.lossReason ?? ""} className="min-h-16" />
           </Field>
         </div>
 
-        {error ? <p className="md:col-span-2 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="md:col-span-2 xl:col-span-4 text-sm text-rose-600">{error}</p> : null}
 
-        <div className="md:col-span-2 flex justify-end">
+        <div className="md:col-span-2 xl:col-span-4 flex justify-end">
           <Button type="submit" disabled={isPending}>
             {isPending ? "Salvando..." : submitLabel}
           </Button>

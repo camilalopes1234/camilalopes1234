@@ -23,68 +23,68 @@ function getConversationSnippet(lead: LeadRow) {
 
 export function LeadTable({ leads }: { leads: LeadRow[] }) {
   if (leads.length === 0) {
-    return <EmptyState title="Nenhum lead encontrado" description="Ajuste os filtros ou cadastre um novo lead para começar." />;
+    return <EmptyState title="Nenhum lead encontrado" description="Ajuste os filtros ou cadastre um novo lead para comecar." />;
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div className="space-y-3">
+      <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
         <Card className="border-white/80 bg-white/85">
           <p className="text-xs text-slate-500">Leads encontrados</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">{leads.length}</p>
+          <p className="mt-1.5 text-[26px] font-semibold text-slate-950">{leads.length}</p>
         </Card>
         <Card className="border-white/80 bg-white/85">
           <p className="text-xs text-slate-500">Valor potencial</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
+          <p className="mt-1.5 text-[26px] font-semibold text-slate-950">
             {formatCurrency(leads.reduce((sum, lead) => sum + Number(lead.potentialValue ?? 0), 0))}
           </p>
         </Card>
         <Card className="border-white/80 bg-white/85">
           <p className="text-xs text-slate-500">Leads quentes</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">{leads.filter((lead) => lead.temperature === "HOT").length}</p>
+          <p className="mt-1.5 text-[26px] font-semibold text-slate-950">{leads.filter((lead) => lead.temperature === "HOT").length}</p>
         </Card>
         <Card className="border-white/80 bg-white/85">
-          <p className="text-xs text-slate-500">Negociação e proposta</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
+          <p className="text-xs text-slate-500">Negociacao e proposta</p>
+          <p className="mt-1.5 text-[26px] font-semibold text-slate-950">
             {leads.filter((lead) => ["NEGOTIATION", "PROPOSAL_SENT"].includes(lead.stage)).length}
           </p>
         </Card>
       </div>
 
-      <div className="grid gap-3 lg:hidden">
+      <div className="grid gap-2.5 lg:hidden">
         {leads.map((lead) => (
           <Link key={lead.id} href={`/leads/${lead.id}`}>
             <Card className="border-white/80 bg-white/90 transition hover:-translate-y-0.5 hover:border-emerald-200">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-base font-semibold text-slate-950">{lead.fullName}</p>
-                  <p className="truncate text-sm text-slate-500">{lead.phone}</p>
+                  <p className="truncate text-[15px] font-semibold text-slate-950">{lead.fullName}</p>
+                  <p className="truncate text-[13px] text-slate-500">{lead.phone}</p>
                 </div>
                 <Badge tone="info" className="shrink-0">
                   {stageLabels[lead.stage]}
                 </Badge>
               </div>
 
-              <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-500">{getConversationSnippet(lead)}</p>
+              <p className="mt-2.5 line-clamp-2 text-[13px] leading-5 text-slate-500">{getConversationSnippet(lead)}</p>
 
-              <div className="mt-4 flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 <Badge tone="default">{lead.source}</Badge>
                 <Badge tone={lead.temperature === "HOT" ? "success" : lead.temperature === "WARM" ? "warning" : "default"}>
                   {temperatureLabels[lead.temperature]}
                 </Badge>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div className="mt-3.5 grid grid-cols-2 gap-2.5 text-[13px]">
                 <div>
                   <p className="text-xs text-slate-400">Valor</p>
                   <p className="font-medium text-slate-900">{formatCurrency(lead.potentialValue?.toString())}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400">Próxima ação</p>
+                  <p className="text-xs text-slate-400">Proxima acao</p>
                   <p className="font-medium text-slate-900">{formatDate(lead.tasks[0]?.dueDate ?? lead.nextActionAt)}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-xs text-slate-400">Responsável</p>
+                  <p className="text-xs text-slate-400">Responsavel</p>
                   <p className="font-medium text-slate-900">{lead.owner.name}</p>
                 </div>
               </div>
@@ -95,39 +95,39 @@ export function LeadTable({ leads }: { leads: LeadRow[] }) {
 
       <Card className="hidden overflow-hidden border-white/80 p-0 lg:block">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+          <table className="min-w-full text-left text-[13px]">
             <thead className="bg-slate-50/80 text-slate-500">
               <tr>
-                <th className="px-5 py-4 font-medium">Lead</th>
-                <th className="px-5 py-4 font-medium">Resumo</th>
-                <th className="px-5 py-4 font-medium">Origem</th>
-                <th className="px-5 py-4 font-medium">Etapa</th>
-                <th className="px-5 py-4 font-medium">Temperatura</th>
-                <th className="px-5 py-4 font-medium">Valor</th>
-                <th className="px-5 py-4 font-medium">Próxima ação</th>
-                <th className="px-5 py-4 font-medium">Responsável</th>
+                <th className="px-4 py-3 font-medium">Lead</th>
+                <th className="px-4 py-3 font-medium">Resumo</th>
+                <th className="px-4 py-3 font-medium">Origem</th>
+                <th className="px-4 py-3 font-medium">Etapa</th>
+                <th className="px-4 py-3 font-medium">Temperatura</th>
+                <th className="px-4 py-3 font-medium">Valor</th>
+                <th className="px-4 py-3 font-medium">Proxima acao</th>
+                <th className="px-4 py-3 font-medium">Responsavel</th>
               </tr>
             </thead>
             <tbody>
               {leads.map((lead) => (
-                <tr key={lead.id} className="border-t border-slate-100 bg-white/70 transition hover:bg-white">
-                  <td className="px-5 py-4">
+                <tr key={lead.id} className="border-t border-slate-100 bg-white/70 transition hover:bg-white/95">
+                  <td className="px-4 py-3.5">
                     <Link href={`/leads/${lead.id}`} className="font-medium text-slate-900 hover:text-emerald-700">
                       {lead.fullName}
                     </Link>
                     <div className="text-xs text-slate-500">{lead.phone}</div>
                   </td>
-                  <td className="max-w-[280px] px-5 py-4 text-slate-500">
+                  <td className="max-w-[260px] px-4 py-3.5 text-slate-500">
                     <p className="line-clamp-2">{getConversationSnippet(lead)}</p>
                   </td>
-                  <td className="px-5 py-4">{lead.source}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3.5">{lead.source}</td>
+                  <td className="px-4 py-3.5">
                     <Badge tone="info">{stageLabels[lead.stage]}</Badge>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3.5">
                     <span
                       className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-semibold",
+                        "rounded-full px-2.5 py-1 text-[11px] font-semibold",
                         lead.temperature === "HOT"
                           ? "bg-emerald-100 text-emerald-700"
                           : lead.temperature === "WARM"
@@ -138,9 +138,9 @@ export function LeadTable({ leads }: { leads: LeadRow[] }) {
                       {temperatureLabels[lead.temperature]}
                     </span>
                   </td>
-                  <td className="px-5 py-4 font-medium text-slate-900">{formatCurrency(lead.potentialValue?.toString())}</td>
-                  <td className="px-5 py-4">{formatDate(lead.tasks[0]?.dueDate ?? lead.nextActionAt)}</td>
-                  <td className="px-5 py-4">{lead.owner.name}</td>
+                  <td className="px-4 py-3.5 font-medium text-slate-900">{formatCurrency(lead.potentialValue?.toString())}</td>
+                  <td className="px-4 py-3.5">{formatDate(lead.tasks[0]?.dueDate ?? lead.nextActionAt)}</td>
+                  <td className="px-4 py-3.5">{lead.owner.name}</td>
                 </tr>
               ))}
             </tbody>

@@ -8,10 +8,10 @@ export function Field({
   hint?: string;
 }) {
   return (
-    <label className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</span>
       {children}
-      {hint ? <span className="text-xs leading-5 text-slate-500">{hint}</span> : null}
+      {hint ? <span className="text-[11px] leading-4 text-slate-500">{hint}</span> : null}
     </label>
   );
 }

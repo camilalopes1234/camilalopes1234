@@ -19,14 +19,14 @@ export function InteractionForm({ leadId }: { leadId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <Card className="border-white/80 bg-white/90">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-950">Registrar interação</h3>
-        <p className="text-sm text-slate-500">Documente contato, próximo passo e mantenha o histórico comercial sempre atualizado.</p>
+    <Card className="space-y-4 border-white/80 bg-white/90">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-base font-semibold text-slate-950">Registrar interacao</h3>
+        <p className="text-[13px] text-slate-500">Atualize o historico e ja deixe o proximo passo engatilhado.</p>
       </div>
 
       <form
-        className="grid gap-4 md:grid-cols-2"
+        className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
         onSubmit={(event) => {
           event.preventDefault();
           setError(null);
@@ -43,12 +43,12 @@ export function InteractionForm({ leadId }: { leadId: string }) {
 
             const data = await response.json();
             if (!response.ok) {
-              setError(data.error ?? "Erro ao registrar interação.");
-              toast.error(data.error ?? "Erro ao registrar interação.");
+              setError(data.error ?? "Erro ao registrar interacao.");
+              toast.error(data.error ?? "Erro ao registrar interacao.");
               return;
             }
 
-            toast.success("Interação registrada.");
+            toast.success("Interacao registrada.");
             form.reset();
             router.refresh();
           });
@@ -64,32 +64,37 @@ export function InteractionForm({ leadId }: { leadId: string }) {
           </Select>
         </Field>
 
-        <Field label="Data da interação">
+        <Field label="Data da interacao">
           <Input name="occurredAt" type="datetime-local" defaultValue={new Date().toISOString().slice(0, 16)} />
         </Field>
 
-        <Field label="Próxima ação" hint="Se preenchida, o CRM poderá usar essa data para follow-up e tarefa comercial.">
+        <Field label="Proxima acao" hint="Preencha para follow-up e tarefa.">
           <Input name="nextActionAt" type="datetime-local" />
         </Field>
 
-        <Field label="Gerar tarefa automaticamente?">
+        <Field label="Gerar tarefa?">
           <Select name="generateTask" defaultValue="true">
             <option value="true">Sim</option>
-            <option value="false">Não</option>
+            <option value="false">Nao</option>
           </Select>
         </Field>
 
-        <div className="md:col-span-2">
-          <Field label="Descrição">
-            <Textarea name="content" required placeholder="Descreva o contato, objeções, sinais de compra e o próximo passo acordado." />
+        <div className="md:col-span-2 xl:col-span-4">
+          <Field label="Descricao">
+            <Textarea
+              name="content"
+              required
+              className="min-h-16"
+              placeholder="Descreva o contato, objeções, sinais de compra e o proximo passo acordado."
+            />
           </Field>
         </div>
 
-        {error ? <p className="md:col-span-2 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="md:col-span-2 xl:col-span-4 text-sm text-rose-600">{error}</p> : null}
 
-        <div className="md:col-span-2 flex justify-end">
+        <div className="md:col-span-2 xl:col-span-4 flex justify-end">
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Registrando..." : "Registrar interação"}
+            {isPending ? "Registrando..." : "Registrar interacao"}
           </Button>
         </div>
       </form>

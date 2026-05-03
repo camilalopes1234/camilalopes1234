@@ -17,8 +17,8 @@ export function LeadFilters({
 }) {
   return (
     <Card className="border-white/80 bg-white/85">
-      <form className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.2fr_repeat(5,minmax(0,1fr))]">
+      <form className="space-y-3">
+        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-[1.35fr_repeat(5,minmax(0,0.88fr))]">
           <Input name="q" placeholder="Buscar nome, telefone, email..." defaultValue={searchParams.q} />
           <Select name="stage" defaultValue={searchParams.stage}>
             <option value="">Todas as etapas</option>
@@ -60,12 +60,12 @@ export function LeadFilters({
           <Link
             href="/leads"
             className={cn(
-              "inline-flex items-center justify-center rounded-2xl bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-200 transition hover:bg-white"
+              "inline-flex h-10 items-center justify-center rounded-xl bg-white/70 px-3.5 text-[13px] font-medium text-slate-700 ring-1 ring-slate-200 transition hover:bg-white"
             )}
           >
             Limpar
           </Link>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Filtros comerciais</span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">Filtros comerciais</span>
         </div>
       </form>
     </Card>

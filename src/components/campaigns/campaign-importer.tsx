@@ -80,6 +80,11 @@ function parseCsv(text: string) {
   return { headers, rows };
 }
 
+function isCsvFile(file: File) {
+  const lowerName = file.name.toLowerCase();
+  return lowerName.endsWith(".csv") || file.type === "text/csv" || file.type === "application/vnd.ms-excel";
+}
+
 function guessField(header: string) {
   const value = header.trim().toLowerCase();
 
@@ -153,6 +158,18 @@ export function CampaignImporter({
 
                 setError(null);
                 setFileName(file.name);
+
+                if (!isCsvFile(file)) {
+                  setHeaders([]);
+                  setRows([]);
+                  setMapping({});
+                  setError("Esse modulo aceita apenas arquivos .csv. Se sua planilha estiver em .xlsx, abra no Excel e salve como CSV antes de importar.");
+                  toast.error("Arquivo invalido. Use um CSV.");
+                  if (inputRef.current) {
+                    inputRef.current.value = "";
+                  }
+                  return;
+                }
 
                 file
                   .text()

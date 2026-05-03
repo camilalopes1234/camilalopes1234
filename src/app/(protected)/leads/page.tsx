@@ -32,13 +32,15 @@ export default async function LeadsPage({
   ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="space-y-2">
-          <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Operação comercial</span>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Leads</h1>
-          <p className="max-w-2xl text-sm leading-6 text-slate-500">
-            Central de cadastro, gestão, filtros e leitura rápida da base comercial em desktop e mobile.
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+        <div className="space-y-1.5">
+          <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
+            Operacao comercial
+          </span>
+          <h1 className="text-[30px] font-semibold tracking-tight text-slate-950">Leads</h1>
+          <p className="max-w-2xl text-[13px] leading-5 text-slate-500">
+            Central de cadastro, gestao, filtros e leitura rapida da base comercial em desktop e mobile.
           </p>
         </div>
         <Link href="/leads/new">
