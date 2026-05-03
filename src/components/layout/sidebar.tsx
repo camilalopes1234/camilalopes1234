@@ -57,7 +57,8 @@ export function Sidebar({ collapsed = false, userRole }: { collapsed?: boolean; 
               href={item.href}
               title={collapsed ? item.label : undefined}
               className={cn(
-                "rounded-xl px-3 py-2.5 text-[13px] transition-all duration-200",
+                "flex w-full rounded-xl px-3 py-2.5 text-[13px] transition-all duration-200",
+                collapsed && "justify-center px-0",
                 active ? "bg-white text-slate-950 shadow-sm" : "text-slate-300 hover:bg-white/10 hover:text-white"
               )}
             >
