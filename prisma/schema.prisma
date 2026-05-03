@@ -448,7 +448,12 @@ model WhatsAppCampaign {
   description         String?
   sendMode            WhatsAppCampaignSendMode @default(TEXT)
   status              WhatsAppCampaignStatus   @default(DRAFT)
+  messageType         MessageType              @default(TEXT)
   messageBody         String
+  mediaUrl            String?
+  mimeType            String?
+  mediaCaption        String?
+  mediaFileName       String?
   audienceSearch      String?
   filterStage         LeadStage?
   filterSourcePrimary LeadSourcePrimary?

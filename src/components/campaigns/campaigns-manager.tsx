@@ -4,6 +4,7 @@ import {
   LeadSourcePrimary,
   LeadStage,
   LeadTemperature,
+  MessageType,
   WhatsAppCampaignRecipientStatus,
   WhatsAppCampaignSendMode,
   WhatsAppCampaignStatus,
@@ -23,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  messageTypeLabels,
   roleLabels,
   sourcePrimaryLabels,
   stageLabels,
@@ -75,7 +77,12 @@ type CampaignItem = {
   description: string | null;
   sendMode: WhatsAppCampaignSendMode;
   status: WhatsAppCampaignStatus;
+  messageType: MessageType;
   messageBody: string;
+  mediaUrl?: string | null;
+  mimeType?: string | null;
+  mediaCaption?: string | null;
+  mediaFileName?: string | null;
   audienceSearch: string | null;
   filterStage: LeadStage | null;
   filterSourcePrimary: LeadSourcePrimary | null;
@@ -195,8 +202,12 @@ function CampaignForm({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [sendMode, setSendMode] = useState<WhatsAppCampaignSendMode>(initialValues?.sendMode ?? WhatsAppCampaignSendMode.TEXT);
+  const [messageType, setMessageType] = useState<MessageType>(initialValues?.messageType ?? MessageType.TEXT);
   const [selectedTemplateId, setSelectedTemplateId] = useState(initialValues?.templateId ?? "");
   const [messageBody, setMessageBody] = useState(initialValues?.messageBody ?? "");
+  const [mediaUrl, setMediaUrl] = useState(initialValues?.mediaUrl ?? "");
+  const [mediaCaption, setMediaCaption] = useState(initialValues?.mediaCaption ?? "");
+  const [mediaFileName, setMediaFileName] = useState(initialValues?.mediaFileName ?? "");
   const [searchValue, setSearchValue] = useState(initialValues?.audienceSearch ?? "");
   const [filterCity, setFilterCity] = useState(initialValues?.filterCity ?? "");
 
@@ -208,7 +219,15 @@ function CampaignForm({
   const preflightChecks = [
     { ok: whatsappConfigured, label: "WhatsApp oficial configurado" },
     { ok: sendMode !== WhatsAppCampaignSendMode.TEMPLATE || Boolean(selectedTemplate?.isApproved), label: "Template aprovado para disparo oficial" },
-    { ok: messageBody.trim().length >= 8, label: "Mensagem base preenchida" },
+    {
+      ok:
+        sendMode === WhatsAppCampaignSendMode.TEMPLATE
+          ? true
+          : messageType === MessageType.TEXT
+            ? Boolean(messageBody.trim())
+            : Boolean(mediaUrl.trim()),
+      label: messageType === MessageType.TEXT ? "Mensagem base preenchida" : "Midia publica preenchida"
+    },
     {
       ok: Boolean(
         searchValue.trim() ||
@@ -301,8 +320,12 @@ function CampaignForm({
             if (!initialValues?.id) {
               event.currentTarget.reset();
               setSendMode(WhatsAppCampaignSendMode.TEXT);
+              setMessageType(MessageType.TEXT);
               setSelectedTemplateId("");
               setMessageBody("");
+              setMediaUrl("");
+              setMediaCaption("");
+              setMediaFileName("");
               setSearchValue("");
               setFilterCity("");
             }
@@ -316,11 +339,31 @@ function CampaignForm({
           <Select
             name="sendMode"
             defaultValue={initialValues?.sendMode ?? WhatsAppCampaignSendMode.TEXT}
-            onChange={(event) => setSendMode(event.target.value as WhatsAppCampaignSendMode)}
+            onChange={(event) => {
+              const nextMode = event.target.value as WhatsAppCampaignSendMode;
+              setSendMode(nextMode);
+              if (nextMode === WhatsAppCampaignSendMode.TEMPLATE) {
+                setMessageType(MessageType.TEXT);
+              }
+            }}
           >
             {Object.entries(whatsappCampaignSendModeLabels).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Tipo do conteudo">
+          <Select
+            name="messageType"
+            value={messageType}
+            onChange={(event) => setMessageType(event.target.value as MessageType)}
+            disabled={sendMode === WhatsAppCampaignSendMode.TEMPLATE}
+          >
+            {[MessageType.TEXT, MessageType.IMAGE, MessageType.VIDEO, MessageType.AUDIO].map((value) => (
+              <option key={value} value={value}>
+                {messageTypeLabels[value]}
               </option>
             ))}
           </Select>
@@ -380,17 +423,65 @@ function CampaignForm({
         ) : null}
 
         <div className="md:col-span-2 xl:col-span-3">
-          <Field label="Mensagem base">
+          <Field label={messageType === MessageType.TEXT ? "Mensagem base" : messageType === MessageType.AUDIO ? "Texto interno de referencia" : "Legenda ou mensagem base"}>
             <Textarea
               name="messageBody"
               value={messageBody}
               onChange={(event) => setMessageBody(event.target.value)}
               className="min-h-20"
-              required
-              placeholder="Ex.: Oi {{primeiro_nome}}, aqui e {{responsavel}}. Quero te mostrar uma condicao especial para {{interesse}}."
+              required={sendMode === WhatsAppCampaignSendMode.TEXT && messageType === MessageType.TEXT}
+              placeholder={
+                messageType === MessageType.TEXT
+                  ? "Ex.: Oi {{primeiro_nome}}, aqui e {{responsavel}}. Quero te mostrar uma condicao especial para {{interesse}}."
+                  : messageType === MessageType.AUDIO
+                    ? "Opcional: use para registrar o contexto interno desse audio."
+                    : "Opcional: use como legenda da foto ou do video."
+              }
             />
           </Field>
         </div>
+        {sendMode === WhatsAppCampaignSendMode.TEXT && messageType !== MessageType.TEXT ? (
+          <>
+            <Field label="URL publica da midia">
+              <Input
+                name="mediaUrl"
+                value={mediaUrl}
+                onChange={(event) => setMediaUrl(event.target.value)}
+                placeholder="https://seu-dominio.com/arquivo.jpg"
+                required
+              />
+            </Field>
+            <Field label="Nome interno do arquivo">
+              <Input
+                name="mediaFileName"
+                value={mediaFileName}
+                onChange={(event) => setMediaFileName(event.target.value)}
+                placeholder={messageType === MessageType.IMAGE ? "foto-oferta.jpg" : messageType === MessageType.VIDEO ? "video-oferta.mp4" : "audio-oferta.mp3"}
+              />
+            </Field>
+            {(messageType === MessageType.IMAGE || messageType === MessageType.VIDEO) ? (
+              <div className="md:col-span-2 xl:col-span-3">
+                <Field label="Legenda da midia">
+                  <Textarea
+                    name="mediaCaption"
+                    value={mediaCaption}
+                    onChange={(event) => setMediaCaption(event.target.value)}
+                    className="min-h-16"
+                    placeholder="Opcional: legenda que acompanha a imagem ou video."
+                  />
+                </Field>
+              </div>
+            ) : (
+              <input type="hidden" name="mediaCaption" value={mediaCaption} />
+            )}
+          </>
+        ) : (
+          <>
+            <input type="hidden" name="mediaUrl" value={mediaUrl} />
+            <input type="hidden" name="mediaCaption" value={mediaCaption} />
+            <input type="hidden" name="mediaFileName" value={mediaFileName} />
+          </>
+        )}
         <Field label="Etapa do funil">
           <Select name="filterStage" defaultValue={initialValues?.filterStage ?? ""}>
             <option value="">Todas</option>
@@ -847,6 +938,7 @@ export function CampaignsManager({
                         <p className="truncate text-lg font-semibold text-slate-950">{campaign.title}</p>
                         <CampaignStatusBadge status={campaign.status} />
                         <Badge tone="info">{whatsappCampaignSendModeLabels[campaign.sendMode]}</Badge>
+                        <Badge tone="default">{messageTypeLabels[campaign.messageType]}</Badge>
                         {campaign.template ? <Badge tone={campaign.template.isApproved ? "success" : "warning"}>{campaign.template.displayName}</Badge> : null}
                       </div>
                       <p className="mt-2 text-sm text-slate-500">{campaign.description || "Sem descricao interna."}</p>
@@ -941,6 +1033,7 @@ export function CampaignsManager({
                           <p className="font-medium text-slate-950">Segmentacao ativa</p>
                         </div>
                         <div className="space-y-2 text-sm text-slate-600">
+                          <p>Tipo de conteudo: {messageTypeLabels[campaign.messageType]}</p>
                           <p>Etapa: {campaign.filterStage ? stageLabels[campaign.filterStage] : "Todas"}</p>
                           <p>Origem: {campaign.filterSourcePrimary ? sourcePrimaryLabels[campaign.filterSourcePrimary] : "Todas"}</p>
                           <p>Temperatura: {campaign.filterTemperature ? temperatureLabels[campaign.filterTemperature] : "Todas"}</p>
@@ -958,6 +1051,7 @@ export function CampaignsManager({
                           <p>Nao receberam: {campaign.failedCount + campaign.skippedCount}</p>
                           <p>Falharam no envio: {campaign.failedCount}</p>
                           <p>Ignorados por regra: {campaign.skippedCount}</p>
+                          {campaign.mediaUrl ? <p>Midia configurada: sim</p> : null}
                         </div>
                       </Card>
 

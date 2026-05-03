@@ -2,6 +2,7 @@ import {
   LeadSourcePrimary,
   LeadStage,
   LeadTemperature,
+  MessageType,
   WhatsAppCampaignSendMode
 } from "@prisma/client";
 import { z } from "zod";
@@ -11,7 +12,12 @@ export const campaignSchema = z
     title: z.string().min(3, "Informe o nome da campanha."),
     description: z.string().optional().nullable(),
     sendMode: z.nativeEnum(WhatsAppCampaignSendMode).default(WhatsAppCampaignSendMode.TEXT),
-    messageBody: z.string().min(8, "Escreva a mensagem ou template base da campanha."),
+    messageType: z.nativeEnum(MessageType).default(MessageType.TEXT),
+    messageBody: z.string().optional().nullable(),
+    mediaUrl: z.string().url("Informe uma URL publica valida para a midia.").optional().nullable().or(z.literal("")),
+    mimeType: z.string().optional().nullable(),
+    mediaCaption: z.string().optional().nullable(),
+    mediaFileName: z.string().optional().nullable(),
     templateId: z.string().optional().nullable(),
     audienceSearch: z.string().optional().nullable(),
     filterStage: z.nativeEnum(LeadStage).optional().nullable(),
@@ -28,6 +34,26 @@ export const campaignSchema = z
         code: z.ZodIssueCode.custom,
         message: "Selecione um template oficial para campanha em massa.",
         path: ["templateId"]
+      });
+    }
+
+    if (value.sendMode === WhatsAppCampaignSendMode.TEXT && value.messageType === MessageType.TEXT && !value.messageBody?.trim()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Escreva a mensagem base da campanha.",
+        path: ["messageBody"]
+      });
+    }
+
+    if (
+      value.sendMode === WhatsAppCampaignSendMode.TEXT &&
+      (value.messageType === MessageType.IMAGE || value.messageType === MessageType.VIDEO || value.messageType === MessageType.AUDIO) &&
+      !value.mediaUrl
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe a URL publica da midia para a campanha.",
+        path: ["mediaUrl"]
       });
     }
   });

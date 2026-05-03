@@ -8,6 +8,11 @@ function normalizeCampaignPayload(payload: Record<string, unknown>, user: { id: 
   return {
     ...payload,
     description: payload.description || null,
+    messageBody: payload.messageBody || null,
+    mediaUrl: payload.mediaUrl || null,
+    mimeType: payload.mimeType || null,
+    mediaCaption: payload.mediaCaption || null,
+    mediaFileName: payload.mediaFileName || null,
     templateId: payload.templateId || null,
     audienceSearch: payload.audienceSearch || null,
     filterStage: payload.filterStage || null,

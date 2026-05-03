@@ -27,7 +27,12 @@ type CampaignInput = {
   title: string;
   description?: string | null;
   sendMode: WhatsAppCampaignSendMode;
-  messageBody: string;
+  messageType: MessageType;
+  messageBody?: string | null;
+  mediaUrl?: string | null;
+  mimeType?: string | null;
+  mediaCaption?: string | null;
+  mediaFileName?: string | null;
   templateId?: string | null;
   audienceSearch?: string | null;
   filterStage?: LeadStage | null;
@@ -199,7 +204,12 @@ export async function createCampaign(input: CampaignInput, actor: Actor) {
       title: input.title.trim(),
       description: cleanNullableString(input.description),
       sendMode: input.sendMode,
-      messageBody: input.messageBody.trim(),
+      messageType: input.messageType,
+      messageBody: input.messageBody?.trim() || "",
+      mediaUrl: cleanNullableString(input.mediaUrl),
+      mimeType: cleanNullableString(input.mimeType),
+      mediaCaption: cleanNullableString(input.mediaCaption),
+      mediaFileName: cleanNullableString(input.mediaFileName),
       templateId: input.templateId || null,
       audienceSearch: cleanNullableString(input.audienceSearch),
       filterStage: input.filterStage ?? null,
@@ -224,6 +234,7 @@ export async function createCampaign(input: CampaignInput, actor: Actor) {
     message: `Campanha ${campaign.title} criada com ${recipientsCount} destinatarios.`,
     metadata: {
       sendMode: campaign.sendMode,
+      messageType: campaign.messageType,
       templateId: campaign.templateId,
       recipientsCount
     }
@@ -245,7 +256,12 @@ export async function updateCampaign(id: string, input: CampaignInput, actor: Ac
       title: input.title.trim(),
       description: cleanNullableString(input.description),
       sendMode: input.sendMode,
-      messageBody: input.messageBody.trim(),
+      messageType: input.messageType,
+      messageBody: input.messageBody?.trim() || "",
+      mediaUrl: cleanNullableString(input.mediaUrl),
+      mimeType: cleanNullableString(input.mimeType),
+      mediaCaption: cleanNullableString(input.mediaCaption),
+      mediaFileName: cleanNullableString(input.mediaFileName),
       templateId: input.templateId || null,
       audienceSearch: cleanNullableString(input.audienceSearch),
       filterStage: input.filterStage ?? null,
@@ -270,6 +286,7 @@ export async function updateCampaign(id: string, input: CampaignInput, actor: Ac
     metadata: {
       recipientsCount,
       sendMode: campaign.sendMode,
+      messageType: campaign.messageType,
       templateId: campaign.templateId
     }
   });
@@ -380,8 +397,12 @@ export async function dispatchCampaignWithMode(id: string, actor: Actor, mode: "
       } else {
         message = await createOutboundMessage({
           conversationId: conversation.id,
-          type: MessageType.TEXT,
+          type: campaign.messageType,
           body: renderedBody,
+          mediaUrl: campaign.mediaUrl,
+          mimeType: campaign.mimeType,
+          caption: campaign.messageType === MessageType.IMAGE || campaign.messageType === MessageType.VIDEO ? campaign.mediaCaption || renderedBody : null,
+          fileName: campaign.mediaFileName,
           userId: actor.id
         });
       }

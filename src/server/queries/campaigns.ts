@@ -1,4 +1,4 @@
-import { MessageStatus, UserRole, WhatsAppCampaignRecipientStatus } from "@prisma/client";
+import { MessageStatus, MessageType, UserRole, WhatsAppCampaignRecipientStatus } from "@prisma/client";
 
 import { prisma } from "@/server/db/prisma";
 import { demoLeads, demoUsers } from "@/server/demo/data";
@@ -43,7 +43,12 @@ export async function getWhatsappCampaigns(actor: Actor) {
         description: "Campanha para retomar leads quentes sem resposta ha mais de 7 dias.",
         sendMode: "TEMPLATE" as const,
         status: "READY" as const,
+        messageType: MessageType.TEXT,
         messageBody: "Oi {{primeiro_nome}}, aqui e {{responsavel}}. Posso te mostrar a condicao premium desta semana?",
+        mediaUrl: null,
+        mimeType: null,
+        mediaCaption: null,
+        mediaFileName: null,
         audienceSearch: null,
         filterStage: "NEGOTIATION" as const,
         filterSourcePrimary: "INSTAGRAM" as const,
