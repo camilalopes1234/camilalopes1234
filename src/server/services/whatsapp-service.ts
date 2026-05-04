@@ -19,10 +19,12 @@ export function buildWhatsappUrl(number?: string | null, message?: string | null
 }
 
 export function getWhatsappConfig() {
+  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN?.trim();
+
   return {
     accessToken: process.env.WHATSAPP_ACCESS_TOKEN,
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
-    verifyToken: process.env.WHATSAPP_VERIFY_TOKEN
+    verifyToken: verifyToken || "change-me"
   };
 }
 
