@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, BriefcaseBusiness, CalendarRange, ClipboardCheck, KanbanSquare, Megaphone, MessageSquareMore, Settings, Users } from "lucide-react";
+import { BarChart3, BriefcaseBusiness, Building2, CalendarRange, ClipboardCheck, KanbanSquare, Megaphone, MessageSquareMore, Settings, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { UserRole } from "@prisma/client";
 
@@ -16,6 +16,7 @@ const items = [
   { href: "/evaluations", label: "Avaliacoes", icon: ClipboardCheck },
   { href: "/conversations", label: "Chatbot", icon: MessageSquareMore },
   { href: "/campaigns", label: "Campanhas WA", icon: Megaphone },
+  { href: "/prospecting", label: "Prospeccao", icon: Building2 },
   { href: "/opportunities", label: "Propostas", icon: BriefcaseBusiness },
   { href: "/users", label: "Usuarios", icon: Users, adminOnly: true },
   { href: "/settings", label: "Configuracoes", icon: Settings }
